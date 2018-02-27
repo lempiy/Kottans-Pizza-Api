@@ -1,21 +1,4 @@
 [[package]]
-name = "Kottans-Pizza-Api"
-version = "0.1.0"
-dependencies = [
- "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "iron 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonwebtoken 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "logger 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "postgres 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "router 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "uuid 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -358,6 +341,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "kottans_pizza_api"
+version = "0.1.0"
+dependencies = [
+ "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "iron 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonwebtoken 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logger 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postgres 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "router 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "language-tags"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -595,10 +595,12 @@ name = "postgres-shared"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
+ "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fallible-iterator 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres-protocol 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -935,10 +937,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "uuid"
-version = "0.6.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1100,7 +1102,7 @@ dependencies = [
 "checksum untrusted 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f392d7819dbe58833e26872f5f6f0d68b7bbbe90fc3667e98731c4a15ad9a7ae"
 "checksum url 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f808aadd8cfec6ef90e4a14eb46f24511824d1ac596b9682703c87056c8678b7"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
-"checksum uuid 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2bcacdce7c75ad110c0dba131d6628c64398593e3895025d043ee2fcf97c4b6e"
+"checksum uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "bcc7e3b898aa6f6c08e5295b6c89258d1331e9ac578cc992fb818759951bdc22"
 "checksum version_check 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "6b772017e347561807c1aa192438c5fd74242a670a6cffacc40f2defd1dc069d"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"

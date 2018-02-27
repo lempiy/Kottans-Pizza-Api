@@ -1,12 +1,14 @@
 use uuid::Uuid;
 use chrono::{DateTime};
 use chrono::offset::Utc;
-use std::error::Error;
 use std::sync::MutexGuard;
 use postgres::Connection;
+use postgres::Error;
+use std::result;
 
+#[derive(Serialize, Deserialize)]
 pub struct User {
-    uuid: Uuid,
+    pub uuid: Uuid,
     username: String,
     email: String,
     password: String,
@@ -66,12 +68,12 @@ impl User {
         let mut email = String::new();
         let mut created_at: Option<DateTime<Utc>> = None;
         let mut last_login: Option<DateTime<Utc>> = None;
-        match &db.query(
+        match db.query(
             "SELECT uuid, email, created_at, last_login \
                 FROM person WHERE username = $1 AND password=$2",
             &[&username, &password]) {
             Ok(query) => {
-                for row in query {
+                for row in query.iter() {
                     uuid = Some(row.get("uuid"));
                     email = row.get("email");
                     created_at = Some(row.get("created_at"));
@@ -81,10 +83,10 @@ impl User {
                 if let Some(uuid) = uuid {
                     Ok(Some(User {
                         uuid,
-                        username,
+                        username: username.to_string(),
                         email,
-                        password,
-                        created_at,
+                        password: username.to_string(),
+                        created_at: created_at.unwrap(),
                         last_login,
                     }))
                 } else {
@@ -92,7 +94,7 @@ impl User {
                 }
             },
             Err(err) => {
-                Err(::std::convert::From::from(err))
+                Err(err)
             }
         }
     }
@@ -106,12 +108,12 @@ impl User {
         let mut email = String::new();
         let mut created_at: Option<DateTime<Utc>> = None;
         let mut last_login: Option<DateTime<Utc>> = None;
-        match &db.query(
+        match db.query(
             "SELECT username, email, password, created_at, last_login \
                 FROM person WHERE uuid = $1",
             &[&uuid]) {
             Ok(query) => {
-                for row in query {
+                for row in query.iter() {
                     username = Some(row.get("username"));
                     email = row.get("email");
                     password = row.get("password");
@@ -119,13 +121,13 @@ impl User {
                     last_login = Some(row.get("last_login"));
                     break
                 }
-                if let Some(uuid) = uuid {
+                if let Some(username) = username {
                     Ok(Some(User {
                         uuid,
                         username,
                         email,
                         password,
-                        created_at,
+                        created_at: created_at.unwrap(),
                         last_login,
                     }))
                 } else {
@@ -133,7 +135,7 @@ impl User {
                 }
             },
             Err(err) => {
-                Err(::std::convert::From::from(err))
+                Err(err)
             }
         }
     }
