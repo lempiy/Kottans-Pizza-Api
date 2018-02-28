@@ -6,6 +6,7 @@ use models::user::User;
 use uuid::Uuid;
 use serde_json;
 use std::error::Error;
+use utils::jwt;
 
 use validator::{Validate, ValidationError, ValidationErrors};
 
@@ -61,5 +62,64 @@ impl Handler for UserCreateHandler {
         };
         let res: String = try_handler!(serde_json::to_string(&response));
         Ok(Response::with((status::Created, res)))
+    }
+}
+
+// Login
+
+pub struct UserLoginHandler {
+    database: Arc<Mutex<Connection>>,
+}
+
+impl UserLoginHandler {
+    pub fn new(database: Arc<Mutex<Connection>>) -> UserLoginHandler {
+        UserLoginHandler{database}
+    }
+}
+
+#[derive(Validate, Deserialize)]
+struct UserLoginRequest {
+    #[validate(length(min="2",max="24",message="Username is not valid. Min length is 2, max - is 24"))]
+    username: String,
+    #[validate(length(min="8",message="Password is not valid. Min length is 8"))]
+    password: String,
+}
+
+#[derive(Serialize)]
+struct UserLoginResponse {
+    success: bool,
+    token: String,
+}
+
+impl Handler for UserLoginHandler {
+    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+        let mut payload = String::new();
+        try_handler!(req.body.read_to_string(&mut payload));
+        let mut user_data: UserLoginRequest =
+            try_handler!(serde_json::from_str(payload.as_ref()), status::BadRequest);
+        try_validate!(user_data.validate());
+        let mg = self.database.lock().unwrap();
+        let result: Option<User> = try_handler!(User::find(
+            &mg,
+            user_data.username.as_ref(),
+            user_data.password.as_ref(),
+        ));
+
+        if let Some(user) = result {
+            let token = try_handler!(jwt::generate(user.username.as_ref(), user.uuid));
+            let response = UserLoginResponse {
+                success: true,
+                token,
+            };
+            let res: String = try_handler!(serde_json::to_string(&response));
+            Ok(Response::with((status::Ok, res)))
+        } else {
+            let response = super::ErrorResponse{
+                success: false,
+                error: "Wrong username or password".to_string()
+            };
+            let res: String = try_handler!(serde_json::to_string(&response));
+            Ok(Response::with((status::BadRequest, res)))
+        }
     }
 }

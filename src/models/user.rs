@@ -12,7 +12,7 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize)]
 pub struct User {
     pub uuid: Uuid,
-    username: String,
+    pub username: String,
     email: String,
     password: String,
     created_at: DateTime<Utc>,
@@ -80,7 +80,7 @@ impl User {
                     uuid = Some(row.get("uuid"));
                     email = row.get("email");
                     created_at = Some(row.get("created_at"));
-                    last_login = Some(row.get("last_login"));
+                    last_login = row.get("last_login");
                     break
                 }
                 if let Some(uuid) = uuid {
@@ -121,7 +121,7 @@ impl User {
                     email = row.get("email");
                     password = row.get("password");
                     created_at = Some(row.get("created_at"));
-                    last_login = Some(row.get("last_login"));
+                    last_login = row.get("last_login");
                     break
                 }
                 if let Some(username) = username {

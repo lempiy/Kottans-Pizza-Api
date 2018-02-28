@@ -7,6 +7,7 @@ use postgres::Connection;
 
 pub struct Handlers {
     pub user_create: user::UserCreateHandler,
+    pub user_login: user::UserLoginHandler,
 }
 
 impl Handlers {
@@ -14,6 +15,7 @@ impl Handlers {
         let database = Arc::new(Mutex::new(db));
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
+            user_login: user::UserLoginHandler::new(database.clone()),
         }
     }
 }

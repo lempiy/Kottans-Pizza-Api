@@ -16,6 +16,7 @@ pub fn create_router() -> Chain {
     let handler = Handlers::new(db);
 
     router.post("/create_user", handler.user_create, "create_user");
+    router.post("/login", handler.user_login, "login");
 
     let json_content_middleware = middlewares::JsonAfterMiddleware;
 

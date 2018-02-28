@@ -9,7 +9,7 @@ extern crate serde_derive;
 
 extern crate uuid;
 extern crate postgres;
-extern crate jsonwebtoken;
+extern crate jsonwebtoken as jwt;
 extern crate serde_json;
 #[macro_use]
 extern crate validator_derive;
@@ -18,6 +18,7 @@ extern crate validator;
 mod models;
 mod handlers;
 mod routes;
+mod utils;
 
 use iron::Iron;
 
