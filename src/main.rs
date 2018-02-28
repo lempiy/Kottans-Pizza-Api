@@ -11,11 +11,17 @@ extern crate uuid;
 extern crate postgres;
 extern crate jsonwebtoken;
 extern crate serde_json;
+#[macro_use]
+extern crate validator_derive;
+extern crate validator;
 
 mod models;
 mod handlers;
+mod routes;
+
+use iron::Iron;
 
 fn main() {
-    let db = models::create_db_connection();
-    let handler = handlers::Handlers::new(db);
+    println!("Start listening on port {}", 3000);
+    Iron::new(routes::create_router()).http("localhost:3000").unwrap();
 }

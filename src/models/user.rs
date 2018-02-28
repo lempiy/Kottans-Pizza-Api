@@ -5,6 +5,9 @@ use std::sync::MutexGuard;
 use postgres::Connection;
 use postgres::Error;
 use std::result;
+use validator::ValidationError;
+use std::borrow::Cow;
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -136,6 +139,36 @@ impl User {
             },
             Err(err) => {
                 Err(err)
+            }
+        }
+    }
+
+    pub fn validate_unique_username(db: &MutexGuard<Connection>, username: &str) -> result::Result<(), ValidationError> {
+        let mut uuid:Option<Uuid> = None;
+        match db.query(
+            "SELECT uuid FROM person WHERE username = $1",
+            &[&username]) {
+            Ok(query) => {
+                for row in query.iter() {
+                    uuid = Some(row.get("uuid"));
+                    break
+                }
+                if let Some(uuid) = uuid {
+                    Err(ValidationError{
+                        code: Cow::from("duplicate_username"),
+                        message: Some(Cow::from("User with such username already exist")),
+                        params: HashMap::new(),
+                    })
+                } else {
+                    Ok(())
+                }
+            },
+            Err(err) => {
+                Err(ValidationError{
+                    code: Cow::from("duplicate_username"),
+                    message: Some(Cow::from("Cannot check username uniqueness")),
+                    params: HashMap::new(),
+                })
             }
         }
     }

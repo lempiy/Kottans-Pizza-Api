@@ -17,3 +17,16 @@ impl Handlers {
         }
     }
 }
+
+#[derive(Serialize)]
+struct ErrorResponse {
+    success: bool,
+    error: String,
+}
+
+#[derive(Serialize)]
+struct ErrorResponseWithValidation {
+    success: bool,
+    error: String,
+    validations: Vec<String>,
+}
