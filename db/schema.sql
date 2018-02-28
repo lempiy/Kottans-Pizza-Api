@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS person;
 CREATE TABLE person (
   id serial primary key,
   uuid UUID unique not null,
-  username TEXT unique null,
+  username TEXT unique not null,
   email TEXT not null,
   password TEXT not null,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
