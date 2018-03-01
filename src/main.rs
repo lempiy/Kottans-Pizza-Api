@@ -14,6 +14,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate validator_derive;
 extern crate validator;
+extern crate base64;
 
 mod models;
 mod handlers;

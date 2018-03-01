@@ -17,3 +17,4 @@ serde_json = "1"
 postgres = { version = "0.15",  features = ["with-chrono", "with-uuid"] }
 validator = "*"
 validator_derive = "*"
+base64 = "*"

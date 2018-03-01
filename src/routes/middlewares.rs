@@ -1,6 +1,6 @@
 use iron::{Response, IronResult, Request};
 use iron::headers::ContentType;
-use iron::AfterMiddleware;
+use iron::{AfterMiddleware, BeforeMiddleware};
 
 pub struct JsonAfterMiddleware;
 
