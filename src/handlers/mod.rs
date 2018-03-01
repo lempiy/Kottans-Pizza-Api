@@ -17,7 +17,7 @@ impl Handlers {
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone()),
-            user_info: user::UserInfoHandler::new(database.clone())
+            user_info: user::UserInfoHandler::new(database.clone()),
         }
     }
 }

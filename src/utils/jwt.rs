@@ -1,8 +1,8 @@
-use jwt::{encode, verify, Header, Algorithm, Validation, TokenData};
+use jwt::{encode, verify, Algorithm, Header, TokenData, Validation};
 use uuid::Uuid;
 use chrono::offset::Utc;
 use chrono::Duration;
-use jwt::errors::{Result, Error, ErrorKind};
+use jwt::errors::{Error, ErrorKind, Result};
 use serde_json;
 use base64;
 use utils::types::StringError;
@@ -14,7 +14,7 @@ pub struct Claims {
     pub uuid: Uuid,
 }
 
-pub fn generate(username: &str, uuid: Uuid)->Result<String> {
+pub fn generate(username: &str, uuid: Uuid) -> Result<String> {
     let secret = "secret";
     let exp = (Utc::now() + Duration::hours(5)).naive_utc().timestamp();
     let full_secret = format!("{}_{}", secret, exp);
@@ -28,25 +28,27 @@ pub fn generate(username: &str, uuid: Uuid)->Result<String> {
 }
 
 pub fn check(token: String) -> Result<TokenData<Claims>> {
-    let b64:Vec<_> = token.split(".").collect();
+    let b64: Vec<_> = token.split(".").collect();
     if b64.len() != 3 {
-        return Err(ErrorKind::InvalidToken.into())
+        return Err(ErrorKind::InvalidToken.into());
     }
 
-    let claims:Claims = match decode_payload(b64[1]) {
+    let claims: Claims = match decode_payload(b64[1]) {
         Ok(claims) => claims,
-        Err(e) => return Err(e)
+        Err(e) => return Err(e),
     };
 
     if claims.exp < Utc::now().naive_utc().timestamp() {
-        return Err(ErrorKind::ExpiredSignature.into())
+        return Err(ErrorKind::ExpiredSignature.into());
     };
 
     if let Ok(valid) = verify_signature(
         b64[2].to_string(),
-        (b64[0].to_owned()+"."+b64[1]), claims.exp) {
+        (b64[0].to_owned() + "." + b64[1]),
+        claims.exp,
+    ) {
         if valid {
-            Ok(TokenData{
+            Ok(TokenData {
                 header: Header::default(),
                 claims,
             })
@@ -59,9 +61,9 @@ pub fn check(token: String) -> Result<TokenData<Claims>> {
 }
 
 pub fn get_claims(token: String) -> Result<Claims> {
-    let b64:Vec<_> = token.split(".").collect();
+    let b64: Vec<_> = token.split(".").collect();
     if b64.len() != 3 {
-        return Err(ErrorKind::InvalidToken.into())
+        return Err(ErrorKind::InvalidToken.into());
     }
 
     decode_payload(b64[1])
@@ -70,8 +72,12 @@ pub fn get_claims(token: String) -> Result<Claims> {
 fn verify_signature(signature: String, signature_input: String, exp: i64) -> Result<bool> {
     let secret = "secret";
     let full_secret = format!("{}_{}", secret, exp);
-    verify(signature.as_ref(),signature_input.as_ref(),
-           full_secret.as_ref(), Algorithm::HS256)
+    verify(
+        signature.as_ref(),
+        signature_input.as_ref(),
+        full_secret.as_ref(),
+        Algorithm::HS256,
+    )
 }
 
 fn decode_payload(payload_b64: &str) -> Result<Claims> {

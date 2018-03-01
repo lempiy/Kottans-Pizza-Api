@@ -7,14 +7,14 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-extern crate uuid;
-extern crate postgres;
+extern crate base64;
 extern crate jsonwebtoken as jwt;
+extern crate postgres;
 extern crate serde_json;
+extern crate uuid;
+extern crate validator;
 #[macro_use]
 extern crate validator_derive;
-extern crate validator;
-extern crate base64;
 
 mod models;
 mod handlers;
@@ -25,5 +25,7 @@ use iron::Iron;
 
 fn main() {
     println!("Start listening on port {}", 3000);
-    Iron::new(routes::create_router()).http("localhost:3000").unwrap();
+    Iron::new(routes::create_router())
+        .http("localhost:3000")
+        .unwrap();
 }

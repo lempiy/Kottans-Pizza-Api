@@ -1,13 +1,13 @@
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use iron::headers::{Authorization, Bearer};
-use iron::{status, AfterMiddleware, Handler, Request, IronResult, Response};
+use iron::{status, AfterMiddleware, Handler, IronResult, Request, Response};
 use std::io::Read;
 use models::user::User;
 use uuid::Uuid;
 use serde_json;
 use std::error::Error;
-use utils::types::{StringError};
+use utils::types::StringError;
 use utils::jwt::{self, get_claims, Claims};
 use chrono::{DateTime, Utc};
 
@@ -21,19 +21,19 @@ pub struct UserCreateHandler {
 
 impl UserCreateHandler {
     pub fn new(database: Arc<Mutex<Connection>>) -> UserCreateHandler {
-        UserCreateHandler{database}
+        UserCreateHandler { database }
     }
 }
 
 #[derive(Validate, Deserialize)]
 struct CreateUserRequest {
-    #[validate(length(min="2",max="24",message="Username is not valid. Min length is 2, max - is 24"))]
+    #[validate(length(min = "2", max = "24",
+                      message = "Username is not valid. Min length is 2, max - is 24"))]
     username: String,
-    #[validate(email(message="Email is not valid"))]
-    email: String,
-    #[validate(length(min="8",message="Password is not valid. Min length is 8"))]
+    #[validate(email(message = "Email is not valid"))] email: String,
+    #[validate(length(min = "8", message = "Password is not valid. Min length is 8"))]
     password: String,
-    #[validate(must_match(other="password",message="Passwords do not match"))]
+    #[validate(must_match(other = "password", message = "Passwords do not match"))]
     password_repeat: String,
 }
 
@@ -51,17 +51,21 @@ impl Handler for UserCreateHandler {
             try_handler!(serde_json::from_str(payload.as_ref()), status::BadRequest);
         let mg = self.database.lock().unwrap();
 
-        try_validate!(user_data.validate(),
-            vec![User::validate_unique_username(&mg, user_data.username.as_ref())]);
+        try_validate!(
+            user_data.validate(),
+            vec![
+                User::validate_unique_username(&mg, user_data.username.as_ref()),
+            ]
+        );
         let user: User = try_handler!(User::new(
             &mg,
             user_data.username.as_ref(),
             user_data.email.as_ref(),
             user_data.password.as_ref(),
         ));
-        let response = CreateUserResponse{
+        let response = CreateUserResponse {
             success: true,
-            uuid: user.uuid.clone()
+            uuid: user.uuid.clone(),
         };
         let res: String = try_handler!(serde_json::to_string(&response));
         Ok(Response::with((status::Created, res)))
@@ -76,15 +80,16 @@ pub struct UserLoginHandler {
 
 impl UserLoginHandler {
     pub fn new(database: Arc<Mutex<Connection>>) -> UserLoginHandler {
-        UserLoginHandler{database}
+        UserLoginHandler { database }
     }
 }
 
 #[derive(Validate, Deserialize)]
 struct UserLoginRequest {
-    #[validate(length(min="2",max="24",message="Username is not valid. Min length is 2, max - is 24"))]
+    #[validate(length(min = "2", max = "24",
+                      message = "Username is not valid. Min length is 2, max - is 24"))]
     username: String,
-    #[validate(length(min="8",message="Password is not valid. Min length is 8"))]
+    #[validate(length(min = "8", message = "Password is not valid. Min length is 8"))]
     password: String,
 }
 
@@ -117,9 +122,9 @@ impl Handler for UserLoginHandler {
             let res: String = try_handler!(serde_json::to_string(&response));
             Ok(Response::with((status::Ok, res)))
         } else {
-            let response = super::ErrorResponse{
+            let response = super::ErrorResponse {
                 success: false,
-                error: "Wrong username or password".to_string()
+                error: "Wrong username or password".to_string(),
             };
             let res: String = try_handler!(serde_json::to_string(&response));
             Ok(Response::with((status::BadRequest, res)))
@@ -135,7 +140,7 @@ pub struct UserInfoHandler {
 
 impl UserInfoHandler {
     pub fn new(database: Arc<Mutex<Connection>>) -> UserInfoHandler {
-        UserInfoHandler{database}
+        UserInfoHandler { database }
     }
 }
 
@@ -145,19 +150,19 @@ struct UserInfoResponse {
     uuid: Uuid,
     email: String,
     created_at: DateTime<Utc>,
-    last_login: Option<DateTime<Utc>>
+    last_login: Option<DateTime<Utc>>,
 }
 
 impl Handler for UserInfoHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
-        let mut bearer: &Authorization<Bearer> = try_handler!(req.headers.get::<Authorization<Bearer>>()
-            .ok_or(StringError("Server error".to_string())));
-        let claims:Claims = try_handler!(get_claims(bearer.token.to_owned()));
+        let mut bearer: &Authorization<Bearer> = try_handler!(
+            req.headers
+                .get::<Authorization<Bearer>>()
+                .ok_or(StringError("Server error".to_string()))
+        );
+        let claims: Claims = try_handler!(get_claims(bearer.token.to_owned()));
         let mg = self.database.lock().unwrap();
-        let result: Option<User> = try_handler!(User::get(
-            &mg,
-            claims.uuid
-        ));
+        let result: Option<User> = try_handler!(User::get(&mg, claims.uuid));
         match result {
             Some(user) => {
                 let response = UserInfoResponse {
@@ -165,15 +170,15 @@ impl Handler for UserInfoHandler {
                     uuid: user.uuid,
                     email: user.email,
                     created_at: user.created_at,
-                    last_login: user.last_login
+                    last_login: user.last_login,
                 };
                 let res: String = try_handler!(serde_json::to_string(&response));
                 Ok(Response::with((status::Ok, res)))
             }
             None => {
-                let response = super::ErrorResponse{
+                let response = super::ErrorResponse {
                     success: false,
-                    error: "User not found".to_string()
+                    error: "User not found".to_string(),
                 };
                 let res: String = try_handler!(serde_json::to_string(&response));
                 Ok(Response::with((status::NotFound, res)))

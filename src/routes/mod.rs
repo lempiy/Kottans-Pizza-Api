@@ -1,6 +1,6 @@
 use models;
 use handlers::*;
-use router::{Router};
+use router::Router;
 use iron::Handler;
 use iron::prelude::Chain;
 use env_logger;
@@ -29,7 +29,7 @@ pub fn create_router() -> Chain {
     chain
 }
 
-fn auth_only<H: Handler>(handler: H)->Chain {
+fn auth_only<H: Handler>(handler: H) -> Chain {
     let auth_only_middleware = middlewares::AuthBeforeMiddleware;
     let mut chain = Chain::new(handler);
     chain.link_before(auth_only_middleware);

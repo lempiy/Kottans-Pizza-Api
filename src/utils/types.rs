@@ -11,5 +11,7 @@ impl fmt::Display for StringError {
 }
 
 impl Error for StringError {
-    fn description(&self) -> &str { &*self.0 }
+    fn description(&self) -> &str {
+        &*self.0
+    }
 }
