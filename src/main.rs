@@ -29,8 +29,8 @@ fn main() {
         Some(val) => val.into_string().unwrap(),
         None => "3000".to_string(),
     };
-    println!("Start listening on port {}", port);
+    println!("Start listening on port 0.0.0.0:{}", port);
     Iron::new(routes::create_router())
-        .http(format!("127.0.0.1:{}", port))
+        .http(("0.0.0.0", 3000))
         .unwrap();
 }

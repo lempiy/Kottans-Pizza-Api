@@ -1,0 +1,10 @@
+version: '3'
+services:
+  kottans_pizza:
+    image: lempiy/kottans_pizza_api:v0.1.1
+    environment:
+      - PORT=3000
+      - RUST_BACKTRACE=1
+    ports:
+      - "3000:3000"
+    container_name: kottans_pizza_service
