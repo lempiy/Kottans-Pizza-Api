@@ -13,10 +13,10 @@ use std::collections::HashMap;
 pub struct User {
     pub uuid: Uuid,
     pub username: String,
-    email: String,
+    pub email: String,
     password: String,
-    created_at: DateTime<Utc>,
-    last_login: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub last_login: Option<DateTime<Utc>>,
 }
 
 type Result<T> = result::Result<T, Error>;

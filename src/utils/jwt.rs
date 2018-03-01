@@ -5,12 +5,13 @@ use chrono::Duration;
 use jwt::errors::{Result, Error, ErrorKind};
 use serde_json;
 use base64;
+use utils::types::StringError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     exp: i64,
-    username: String,
-    uuid: Uuid,
+    pub username: String,
+    pub uuid: Uuid,
 }
 
 pub fn generate(username: &str, uuid: Uuid)->Result<String> {
@@ -55,6 +56,15 @@ pub fn check(token: String) -> Result<TokenData<Claims>> {
     } else {
         Err(ErrorKind::InvalidToken.into())
     }
+}
+
+pub fn get_claims(token: String) -> Result<Claims> {
+    let b64:Vec<_> = token.split(".").collect();
+    if b64.len() != 3 {
+        return Err(ErrorKind::InvalidToken.into())
+    }
+
+    decode_payload(b64[1])
 }
 
 fn verify_signature(signature: String, signature_input: String, exp: i64) -> Result<bool> {

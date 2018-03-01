@@ -1,6 +1,7 @@
 use models;
 use handlers::*;
-use router::Router;
+use router::{Router};
+use iron::Handler;
 use iron::prelude::Chain;
 use env_logger;
 use logger::Logger;
@@ -17,6 +18,7 @@ pub fn create_router() -> Chain {
 
     router.post("/create_user", handler.user_create, "create_user");
     router.post("/login", handler.user_login, "login");
+    router.get("/my_info", auth_only(handler.user_info), "my_info");
 
     let json_content_middleware = middlewares::JsonAfterMiddleware;
 
@@ -27,3 +29,9 @@ pub fn create_router() -> Chain {
     chain
 }
 
+fn auth_only<H: Handler>(handler: H)->Chain {
+    let auth_only_middleware = middlewares::AuthBeforeMiddleware;
+    let mut chain = Chain::new(handler);
+    chain.link_before(auth_only_middleware);
+    chain
+}

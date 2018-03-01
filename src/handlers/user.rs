@@ -1,12 +1,15 @@
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
+use iron::headers::{Authorization, Bearer};
 use iron::{status, AfterMiddleware, Handler, Request, IronResult, Response};
 use std::io::Read;
 use models::user::User;
 use uuid::Uuid;
 use serde_json;
 use std::error::Error;
-use utils::jwt;
+use utils::types::{StringError};
+use utils::jwt::{self, get_claims, Claims};
+use chrono::{DateTime, Utc};
 
 use validator::{Validate, ValidationError, ValidationErrors};
 
@@ -120,6 +123,61 @@ impl Handler for UserLoginHandler {
             };
             let res: String = try_handler!(serde_json::to_string(&response));
             Ok(Response::with((status::BadRequest, res)))
+        }
+    }
+}
+
+// My info
+
+pub struct UserInfoHandler {
+    database: Arc<Mutex<Connection>>,
+}
+
+impl UserInfoHandler {
+    pub fn new(database: Arc<Mutex<Connection>>) -> UserInfoHandler {
+        UserInfoHandler{database}
+    }
+}
+
+#[derive(Serialize)]
+struct UserInfoResponse {
+    username: String,
+    uuid: Uuid,
+    email: String,
+    created_at: DateTime<Utc>,
+    last_login: Option<DateTime<Utc>>
+}
+
+impl Handler for UserInfoHandler {
+    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+        let mut bearer: &Authorization<Bearer> = try_handler!(req.headers.get::<Authorization<Bearer>>()
+            .ok_or(StringError("Server error".to_string())));
+        let claims:Claims = try_handler!(get_claims(bearer.token.to_owned()));
+        let mg = self.database.lock().unwrap();
+        let result: Option<User> = try_handler!(User::get(
+            &mg,
+            claims.uuid
+        ));
+        match result {
+            Some(user) => {
+                let response = UserInfoResponse {
+                    username: user.username,
+                    uuid: user.uuid,
+                    email: user.email,
+                    created_at: user.created_at,
+                    last_login: user.last_login
+                };
+                let res: String = try_handler!(serde_json::to_string(&response));
+                Ok(Response::with((status::Ok, res)))
+            }
+            None => {
+                let response = super::ErrorResponse{
+                    success: false,
+                    error: "User not found".to_string()
+                };
+                let res: String = try_handler!(serde_json::to_string(&response));
+                Ok(Response::with((status::NotFound, res)))
+            }
         }
     }
 }

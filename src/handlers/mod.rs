@@ -8,6 +8,7 @@ use postgres::Connection;
 pub struct Handlers {
     pub user_create: user::UserCreateHandler,
     pub user_login: user::UserLoginHandler,
+    pub user_info: user::UserInfoHandler,
 }
 
 impl Handlers {
@@ -16,6 +17,7 @@ impl Handlers {
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone()),
+            user_info: user::UserInfoHandler::new(database.clone())
         }
     }
 }
