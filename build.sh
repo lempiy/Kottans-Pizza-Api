@@ -14,15 +14,28 @@ fi
 
 echo "Building binary..."
 cargo build --release
-echo "Build for ${NAME} is done!"
+if [ $? -eq 0 ]; then
+    echo "Build for ${NAME} is done!"
+else
+    exit 1
+fi
 
 echo "Start building image of ${NAME}..."
 cp target/release/${NAME} docker
 docker build -t lempiy/${NAME}:$1 ./docker
-echo "Successfully built $i!"
+if [ $? -eq 0 ]; then
+    echo "Successfully built ${NAME}!"
+else
+    exit 1
+fi
+
 echo "Pushing ${NAME}:$1 image to docker-hub..."
 docker push lempiy/${NAME}:$1
-echo "Image ${NAME}:$1 pushed successfully!"
+if [ $? -eq 0 ]; then
+    echo "Image ${NAME}:$1 pushed successfully!"
+else
+    exit 1
+fi
 
 sed -i -e "s/${NAME}:v.*/${NAME}:${1}/g" ./docker/docker-compose-build.yml
 echo "Remove temporal files ..."

@@ -31,6 +31,6 @@ fn main() {
     };
     println!("Start listening on port 0.0.0.0:{}", port);
     Iron::new(routes::create_router())
-        .http(("0.0.0.0", 3000))
+        .http(format!("0.0.0.0:{}", port))
         .unwrap();
 }

@@ -5,6 +5,7 @@ services:
     environment:
       - PORT=3000
       - RUST_BACKTRACE=1
+    network_mode: "host"
     ports:
       - "3000:3000"
     container_name: kottans_pizza_service
