@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use iron::headers::{Authorization, Bearer};
-use iron::{status, AfterMiddleware, Handler, IronResult, Request, Response};
+use iron::{status, Handler, IronResult, Request, Response};
 use std::io::Read;
 use models::user::User;
 use uuid::Uuid;
@@ -11,7 +11,7 @@ use utils::types::StringError;
 use utils::jwt::{self, get_claims, Claims};
 use chrono::{DateTime, Utc};
 
-use validator::{Validate, ValidationError, ValidationErrors};
+use validator::Validate;
 
 // Create user
 
@@ -47,7 +47,7 @@ impl Handler for UserCreateHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         let mut payload = String::new();
         try_handler!(req.body.read_to_string(&mut payload));
-        let mut user_data: CreateUserRequest =
+        let user_data: CreateUserRequest =
             try_handler!(serde_json::from_str(payload.as_ref()), status::BadRequest);
         let mg = self.database.lock().unwrap();
 
@@ -103,7 +103,7 @@ impl Handler for UserLoginHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         let mut payload = String::new();
         try_handler!(req.body.read_to_string(&mut payload));
-        let mut user_data: UserLoginRequest =
+        let user_data: UserLoginRequest =
             try_handler!(serde_json::from_str(payload.as_ref()), status::BadRequest);
         try_validate!(user_data.validate());
         let mg = self.database.lock().unwrap();
@@ -155,7 +155,7 @@ struct UserInfoResponse {
 
 impl Handler for UserInfoHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
-        let mut bearer: &Authorization<Bearer> = try_handler!(
+        let bearer: &Authorization<Bearer> = try_handler!(
             req.headers
                 .get::<Authorization<Bearer>>()
                 .ok_or(StringError("Server error".to_string()))

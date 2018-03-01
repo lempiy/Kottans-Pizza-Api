@@ -22,10 +22,15 @@ mod routes;
 mod utils;
 
 use iron::Iron;
+use std::env;
 
 fn main() {
-    println!("Start listening on port {}", 3000);
+    let port = match env::var_os("PORT") {
+        Some(val) => val.into_string().unwrap(),
+        None => "3000".to_string(),
+    };
+    println!("Start listening on port {}", port);
     Iron::new(routes::create_router())
-        .http("localhost:3000")
+        .http(format!("127.0.0.1:{}", port))
         .unwrap();
 }

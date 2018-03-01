@@ -39,20 +39,20 @@ impl User {
 
         if let Err(e) = db.execute(
             "INSERT INTO person (\
-                uuid, \
-                username, \
-                email, \
-                password, \
-                created_at,\
-                last_login\
-            ) VALUES (\
-                $1,
-                $2,
-                $3,
-                $4,
-                $5,
-                $6
-            )",
+             uuid, \
+             username, \
+             email, \
+             password, \
+             created_at, \
+             last_login\
+             ) VALUES (\
+             $1, \
+             $2, \
+             $3, \
+             $4, \
+             $5, \
+             $6\
+             )",
             &[
                 &user.uuid,
                 &user.username,
@@ -155,7 +155,7 @@ impl User {
                     uuid = Some(row.get("uuid"));
                     break;
                 }
-                if let Some(uuid) = uuid {
+                if let Some(_) = uuid {
                     Err(ValidationError {
                         code: Cow::from("duplicate_username"),
                         message: Some(Cow::from("User with such username already exist")),
@@ -165,7 +165,7 @@ impl User {
                     Ok(())
                 }
             }
-            Err(err) => Err(ValidationError {
+            Err(_) => Err(ValidationError {
                 code: Cow::from("duplicate_username"),
                 message: Some(Cow::from("Cannot check username uniqueness")),
                 params: HashMap::new(),

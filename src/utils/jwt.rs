@@ -1,11 +1,10 @@
-use jwt::{encode, verify, Algorithm, Header, TokenData, Validation};
+use jwt::{encode, verify, Algorithm, Header, TokenData};
 use uuid::Uuid;
 use chrono::offset::Utc;
 use chrono::Duration;
-use jwt::errors::{Error, ErrorKind, Result};
+use jwt::errors::{ErrorKind, Result};
 use serde_json;
 use base64;
-use utils::types::StringError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

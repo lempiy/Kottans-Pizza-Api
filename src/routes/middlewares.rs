@@ -1,7 +1,6 @@
 use iron::{status, IronError, IronResult, Request, Response};
 use iron::headers::{Authorization, Bearer, ContentType};
 use iron::{AfterMiddleware, BeforeMiddleware};
-use iron::AroundMiddleware;
 use utils::types::StringError;
 use utils::jwt::check;
 use iron::modifiers;
