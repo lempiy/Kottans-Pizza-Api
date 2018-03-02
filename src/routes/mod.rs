@@ -7,6 +7,7 @@ use env_logger;
 use logger::Logger;
 
 mod middlewares;
+use iron_cors::CorsMiddleware;
 
 pub fn create_router() -> Chain {
     let mut router = Router::new();
@@ -21,9 +22,11 @@ pub fn create_router() -> Chain {
     router.get("/my_info", auth_only(handler.user_info), "my_info");
 
     let json_content_middleware = middlewares::JsonAfterMiddleware;
+    let cors_middleware = CorsMiddleware::with_allow_any(true);
 
     let mut chain = Chain::new(router);
     chain.link_before(logger_before);
+    chain.link_around(cors_middleware);
     chain.link_after(json_content_middleware);
     chain.link_after(logger_after);
     chain
