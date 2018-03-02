@@ -45,3 +45,20 @@ impl BeforeMiddleware for AuthBeforeMiddleware {
         }
     }
 }
+
+pub struct NotFound404;
+
+impl AfterMiddleware for NotFound404 {
+    fn catch(&self, _: &mut Request, err: IronError) -> IronResult<Response> {
+
+        if let Some(s) = err.response.status {
+            if s == status::NotFound {
+                Ok(Response::with((status::NotFound, r#"{"status": "404 Not Found"}"#)))
+            } else {
+                Err(err)
+            }
+        } else {
+            Err(err)
+        }
+    }
+}
