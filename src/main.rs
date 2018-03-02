@@ -8,15 +8,16 @@ extern crate serde;
 extern crate serde_derive;
 
 extern crate base64;
+extern crate iron_cors;
 extern crate jsonwebtoken as jwt;
+extern crate mount;
 extern crate postgres;
+extern crate redis;
 extern crate serde_json;
 extern crate uuid;
 extern crate validator;
 #[macro_use]
 extern crate validator_derive;
-extern crate iron_cors;
-extern crate mount;
 
 mod models;
 mod handlers;

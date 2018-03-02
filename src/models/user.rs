@@ -144,6 +144,16 @@ impl User {
         }
     }
 
+    pub fn update_login(db: &MutexGuard<Connection>, uuid: Uuid) -> Result<()> {
+        match db.query(
+            "UPDATE person SET last_login=now() WHERE uuid = $1",
+            &[&uuid],
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err),
+        }
+    }
+
     pub fn validate_unique_username(
         db: &MutexGuard<Connection>,
         username: &str,

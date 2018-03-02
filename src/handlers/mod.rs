@@ -4,6 +4,7 @@ mod user;
 
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
+use redis;
 
 pub struct Handlers {
     pub user_create: user::UserCreateHandler,
@@ -12,11 +13,11 @@ pub struct Handlers {
 }
 
 impl Handlers {
-    pub fn new(db: Connection) -> Handlers {
+    pub fn new(db: Connection, rds: Arc<Mutex<redis::Connection>>) -> Handlers {
         let database = Arc::new(Mutex::new(db));
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
-            user_login: user::UserLoginHandler::new(database.clone()),
+            user_login: user::UserLoginHandler::new(database.clone(), rds.clone()),
             user_info: user::UserInfoHandler::new(database.clone()),
         }
     }

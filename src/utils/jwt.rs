@@ -1,10 +1,12 @@
 use jwt::{encode, verify, Algorithm, Header, TokenData};
 use uuid::Uuid;
 use chrono::offset::Utc;
-use chrono::Duration;
 use jwt::errors::{ErrorKind, Result};
 use serde_json;
 use base64;
+use std::sync::MutexGuard;
+use redis::Connection;
+use utils::cache::get_session;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -13,9 +15,7 @@ pub struct Claims {
     pub uuid: Uuid,
 }
 
-pub fn generate(username: &str, uuid: Uuid) -> Result<String> {
-    let secret = "secret";
-    let exp = (Utc::now() + Duration::hours(5)).naive_utc().timestamp();
+pub fn generate(username: &str, uuid: Uuid, secret: String, exp: i64) -> Result<String> {
     let full_secret = format!("{}_{}", secret, exp);
     let claims = Claims {
         exp,
@@ -26,7 +26,7 @@ pub fn generate(username: &str, uuid: Uuid) -> Result<String> {
     encode(&Header::default(), &claims, full_secret.as_ref())
 }
 
-pub fn check(token: String) -> Result<TokenData<Claims>> {
+pub fn check(rds: &MutexGuard<Connection>, token: String) -> Result<TokenData<Claims>> {
     let b64: Vec<_> = token.split(".").collect();
     if b64.len() != 3 {
         return Err(ErrorKind::InvalidToken.into());
@@ -41,10 +41,16 @@ pub fn check(token: String) -> Result<TokenData<Claims>> {
         return Err(ErrorKind::ExpiredSignature.into());
     };
 
+    let secret = match get_session(rds, claims.uuid) {
+        Ok(secret) => secret,
+        Err(_) => return Err(ErrorKind::InvalidSignature.into()),
+    };
+
     if let Ok(valid) = verify_signature(
         b64[2].to_string(),
         (b64[0].to_owned() + "." + b64[1]),
         claims.exp,
+        secret,
     ) {
         if valid {
             Ok(TokenData {
@@ -68,8 +74,12 @@ pub fn get_claims(token: String) -> Result<Claims> {
     decode_payload(b64[1])
 }
 
-fn verify_signature(signature: String, signature_input: String, exp: i64) -> Result<bool> {
-    let secret = "secret";
+fn verify_signature(
+    signature: String,
+    signature_input: String,
+    exp: i64,
+    secret: String,
+) -> Result<bool> {
     let full_secret = format!("{}_{}", secret, exp);
     verify(
         signature.as_ref(),

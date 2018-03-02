@@ -2,7 +2,7 @@ version: "2"
 
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:10.2
     container_name: postgreSQL
     ports:
       - "5432:5432"
@@ -12,3 +12,9 @@ services:
       POSTGRES_PASSWORD: xxpassxx
       POSTGRES_USER: db_user
       POSTGRES_DB: pizza
+  redis:
+    image: redis:4.0
+    ports:
+      - "6379:6379"
+    container_name: redis_pizza
+

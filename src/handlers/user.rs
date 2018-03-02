@@ -9,7 +9,9 @@ use serde_json;
 use std::error::Error;
 use utils::types::StringError;
 use utils::jwt::{self, get_claims, Claims};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
+use redis;
+use utils::cache::set_session;
 
 use validator::Validate;
 
@@ -76,11 +78,15 @@ impl Handler for UserCreateHandler {
 
 pub struct UserLoginHandler {
     database: Arc<Mutex<Connection>>,
+    rds: Arc<Mutex<redis::Connection>>,
 }
 
 impl UserLoginHandler {
-    pub fn new(database: Arc<Mutex<Connection>>) -> UserLoginHandler {
-        UserLoginHandler { database }
+    pub fn new(
+        database: Arc<Mutex<Connection>>,
+        rds: Arc<Mutex<redis::Connection>>,
+    ) -> UserLoginHandler {
+        UserLoginHandler { database, rds }
     }
 }
 
@@ -107,6 +113,7 @@ impl Handler for UserLoginHandler {
             try_handler!(serde_json::from_str(payload.as_ref()), status::BadRequest);
         try_validate!(user_data.validate());
         let mg = self.database.lock().unwrap();
+        let rds = self.rds.lock().unwrap();
         let result: Option<User> = try_handler!(User::find(
             &mg,
             user_data.username.as_ref(),
@@ -114,7 +121,15 @@ impl Handler for UserLoginHandler {
         ));
 
         if let Some(user) = result {
-            let token = try_handler!(jwt::generate(user.username.as_ref(), user.uuid));
+            try_handler!(User::update_login(&mg, user.uuid));
+            let exp = (Utc::now() + Duration::hours(5)).naive_utc().timestamp();
+            let secret = try_handler!(set_session(&rds, user.uuid, Uuid::new_v4(), exp));
+            let token = try_handler!(jwt::generate(
+                user.username.as_ref(),
+                user.uuid,
+                secret,
+                exp
+            ));
             let response = UserLoginResponse {
                 success: true,
                 token,

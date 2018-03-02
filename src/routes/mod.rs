@@ -1,4 +1,5 @@
 use models;
+use utils::cache;
 use handlers::*;
 use router::Router;
 use iron::Handler;
@@ -9,23 +10,26 @@ use logger::Logger;
 mod middlewares;
 use iron_cors::CorsMiddleware;
 use mount::Mount;
+use std::sync::{Arc, Mutex};
+use redis::Connection;
 
 pub fn create_router() -> Chain {
     env_logger::init().unwrap();
 
     let db = models::create_db_connection();
-    let handler = Handlers::new(db);
+    let redis = Arc::new(Mutex::new(cache::create_redis_connection()));
+
+    let handler = Handlers::new(db, redis.clone());
 
     let mut users_router = Router::new();
 
     users_router.post("/create", handler.user_create, "create_user");
     users_router.post("/login", handler.user_login, "login");
-    users_router.get("/my_info", auth_only(handler.user_info), "my_info");
+    users_router.get("/my_info", auth_only(handler.user_info, redis), "my_info");
 
 
     let mut mount = Mount::new();
-    mount
-        .mount("/api/v1/user", users_router);
+    mount.mount("/api/v1/user", users_router);
 
     apply_middlewares(mount)
 }
@@ -46,8 +50,8 @@ fn apply_middlewares(mount: Mount) -> Chain {
     chain
 }
 
-fn auth_only<H: Handler>(handler: H) -> Chain {
-    let auth_only_middleware = middlewares::AuthBeforeMiddleware;
+fn auth_only<H: Handler>(handler: H, rds: Arc<Mutex<Connection>>) -> Chain {
+    let auth_only_middleware = middlewares::AuthBeforeMiddleware::new(rds);
     let mut chain = Chain::new(handler);
     chain.link_before(auth_only_middleware);
     chain
