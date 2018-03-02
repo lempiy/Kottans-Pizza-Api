@@ -1,13 +1,13 @@
-## Users And Auth
+# Users And Auth
 
 Users Component responsible for authorization inside the system 
 and CRUD operations over pizza management users.
 
-### Methods
+## Methods
 
 ***
 
-#### Create user
+### Create user
 
 | Method | Url | Description | Auth required |
 | --- | --- | --- | --- |
@@ -24,7 +24,7 @@ and CRUD operations over pizza management users.
 }
 ```
 
-Validation:
+*Validation:*
 
 | Field | Type | Requirement | 
 | --- | --- | --- |
@@ -34,11 +34,11 @@ Validation:
 |` email` | *string* | Should be valid email |
 
 
-Success Response Status: - `201 Created`
+*Success Response Status:* - `201 Created`
 
 **Response body:**
 
-Successful:
+*Successful:*
 ```json
 {
     "success": true,
@@ -46,7 +46,7 @@ Successful:
 }
 ```
 
-Failed:
+*Failed:*
 ```json
 {
     "success": false,
@@ -62,7 +62,7 @@ Failed:
 
 ***
 
-#### Login
+### Login
 
 | Method | Url | Description | Auth required |
 | --- | --- | --- | --- |
@@ -77,7 +77,7 @@ Failed:
 }
 ```
 
-Validation:
+*Validation:*
 
 | Field | Type | Requirement | 
 | --- | --- | --- |
@@ -85,11 +85,11 @@ Validation:
 | `password` | *string* | Min length 8 |
 
 
-Success Response Status: - `200 OK`
+*Success Response Status:* - `200 OK`
 
 **Response body:**
 
-Successful:
+*Successful:*
 ```json
 {
     "success": true,
@@ -97,7 +97,7 @@ Successful:
 }
 ```
 
-Failed:
+*Failed:*
 ```json
 {
     "success": false,
@@ -107,7 +107,7 @@ Failed:
 
 ***
 
-#### My Info
+### My Info
 
 | Method | Url | Description | Auth required |
 | --- | --- | --- | --- |
@@ -115,11 +115,11 @@ Failed:
 
 **Request body:** `None`
 
-Success Response Status: - `200 OK`
+*Success Response Status:* - `200 OK`
 
 **Response body:**
 
-Successful:
+*Successful:*
 ```json
 {
     "username": "lempiy",
@@ -130,7 +130,7 @@ Successful:
 }
 ```
 
-Failed:
+*Failed:*
 ```json
 {
     "success": false,

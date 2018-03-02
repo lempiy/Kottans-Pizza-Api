@@ -14,26 +14,22 @@
 
 All API endpoints are being served on path `/api/v1/`.
 Each component of API hash own namespace, for instance, `/api/v1/user`, 
-or `/api/v1/pizza`.
-
-Most of the endpoints require Authorization token to be
+or `/api/v1/pizza`. Most of the endpoints require Authorization token to be
 sent in `Authorization: Bearer ...` header. Token can be received
-using [login](USERS.md#login) method of API.
-
-Token is a simple JWT with `exp` param inside payload. So it may 
+using [login](USERS.md#login) method of API. Token is a simple JWT with `exp` param inside payload. So it may 
 expire after N hours. Example of token, its header and payload:
 
 ```js
-const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MjAwMTU1OTAsInVzZXJuYW1lIjoibGVtcGl5IiwidXVpZCI6ImQxNjBmZTZjLTIwYTEtNDFkMS1hMzMxLTIzODNkNmExODVjZSJ9._mov-jeMzOwqEwBhyxrF3GZ3I8hKzw8pPZMwB-Do6d8"
+const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.ExODVjZSJ9._mov-jeMzOwqEwBhyxrF3GZ3I8hKzw8pPZMwB-Do6d8"
 ```
-Header:
+*Header:*
 ```json
 {
   "typ": "JWT",
   "alg": "HS256"
 }
 ```
-Payload:
+*Payload:*
 ```json
 {
   "exp": 1520015590,
