@@ -20,7 +20,7 @@ using [login](USERS.md#login) method of API. Token is a simple JWT with `exp` pa
 expire after N hours. Example of token, its header and payload:
 
 ```js
-let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.ExODVjZSJ9._mov-jeMzOwqEwBhyxrF3GZ3I8hKzw8pPZMwB-Do6d8"
+let token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.ExODSJ9._mov-jeMzOwqEwBhyxrF3GZ3I8hKzw8pPZMwB-Do6d8"
 ```
 *Header:*
 ```json
