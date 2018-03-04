@@ -20,6 +20,6 @@
 ***
 
 
-**Link to deployed API [https://pizza-aga.ga/api/v1/user/my_info](https://pizza-vtridoro.ga/api/v1/user/my_info)**
+**Link to deployed API [https://pizza-tele.ga/api/v1/user/my_info](https://pizza-vtridoro.ga/api/v1/user/my_info)**
 
 ### [Documentation](docs/README.md)
