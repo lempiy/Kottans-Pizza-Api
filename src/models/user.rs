@@ -168,7 +168,7 @@ impl User {
                 if let Some(_) = uuid {
                     Err(ValidationError {
                         code: Cow::from("duplicate_username"),
-                        message: Some(Cow::from("User with such username already exist")),
+                        message: Some(Cow::from("User with such username already exists")),
                         params: HashMap::new(),
                     })
                 } else {
