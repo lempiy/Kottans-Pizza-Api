@@ -5,11 +5,14 @@ mod user;
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use redis;
+use iron::{status, Handler, IronResult, Request, Response};
 
 pub struct Handlers {
     pub user_create: user::UserCreateHandler,
     pub user_login: user::UserLoginHandler,
     pub user_info: user::UserInfoHandler,
+
+    pub index_handler: IndexHandler,
 }
 
 impl Handlers {
@@ -19,7 +22,25 @@ impl Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone(), rds.clone()),
             user_info: user::UserInfoHandler::new(database.clone()),
+
+            index_handler: IndexHandler::new(),
         }
+    }
+}
+
+pub struct IndexHandler;
+
+impl IndexHandler {
+    pub fn new() -> IndexHandler {
+        IndexHandler {}
+    }
+}
+
+impl Handler for IndexHandler {
+    fn handle(&self, _: &mut Request) -> IronResult<Response> {
+        Ok(Response::with((status::Ok,
+        r#"{"name": "Kottans Pizza Api","source": "https://github.com/lempiy/Kottans-Pizza-Api"}"#)
+        ))
     }
 }
 
