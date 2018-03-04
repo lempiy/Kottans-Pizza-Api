@@ -13,7 +13,7 @@ use chrono::{DateTime, Duration, Utc};
 use redis;
 use utils::cache::set_session;
 
-use validator::Validate;
+use validator::{Validate,ValidationError};
 
 // Create user
 

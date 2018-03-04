@@ -66,7 +66,39 @@ macro_rules! try_validate {
     // this is handler pattern for additional (in ex. DB depended) error validation
     ($e:expr, $more_errors: expr) => {
         match $e {
-            Ok(x) => x,
+            Ok(x) => {
+                if $more_errors
+                    .into_iter()
+                    .filter(|x| if let &Err(_) = x {true}else{false})
+                        .collect::<Vec<Result<(), ValidationError>>>().len() > 0 {
+                    let response = super::ErrorResponseWithValidation{
+                        success: false,
+                        error: "Validation error".to_string(),
+                        validations: $more_errors
+                            .into_iter()
+                            .filter_map(|x| {
+                                if let Err(a) = x {
+                                    Some(a)
+                                } else {
+                                    None
+                                }
+                            })
+                            .filter_map(|x| {
+                                if let Some(ref msg) = x.message {
+                                    Some(msg.to_string())
+                                } else {
+                                    None
+                                }
+                            }).collect()
+                    };
+                    if let Ok(res) = serde_json::to_string(&response) {
+                        return Ok(Response::with((status::BadRequest, res)))
+                    };
+                    return Ok(Response::with((status::BadRequest, "Server error")))
+                } else {
+                    x
+                }
+            },
             Err(e) => {
                 let response = super::ErrorResponseWithValidation{
                     success: false,
