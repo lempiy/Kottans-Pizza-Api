@@ -10,14 +10,18 @@ services:
     container_name: kottans_pizza_service
 
   nginx:
-    image: martmaiste/nginx-certbot:latest
+    image: lempiy/nginx-certbox:v1.1
     network_mode: "host"
     environment:
-      - DOMAIN=pizza-aga.ga
+      - DOMAIN=pizza-tele.ga
       - EMAIL=lempiyada@gmail.com
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - /etc/letsencrypt/live:/etc/letsencrypt/live
+      - /etc/letsencrypt/archive:/etc/letsencrypt/archive
+      - /etc/letsencrypt/webrootauth:/etc/letsencrypt/webrootauth
     container_name: nginx_proxy
 
   redis:
