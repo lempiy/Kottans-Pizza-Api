@@ -29,7 +29,7 @@ Ingredient Component responsible for CRUD operations over pizza ingredients.
 | `offset` | *uint64* | Number of skipped records  |
 | `limit` | *uint64* | Number of taken records |
 | `count` | *uint64* | Total count of records |
-| `results` | *Array<Ingredient>* | Actual result of query |
+| `results` | *[]Ingredient* | Actual result of query |
 
 
 *Ingredient type:*
