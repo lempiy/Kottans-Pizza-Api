@@ -33,6 +33,7 @@ Ingredient Component responsible for CRUD operations over pizza ingredients.
 
 
 *Ingredient type:*
+
 | Field | Type | Requirement |
 | --- | --- | --- |
 | `id` | *uint32* | Id of ingredient  |
