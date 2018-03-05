@@ -7,7 +7,8 @@
 	* [Login](USERS.md#login)
 	* [My Info](USERS.md#my-info)
 * Pizza
-* Ingredient
+* [Ingredient](INGREDIENT.md)
+    * [Create User](INGREDIENT.md#list)
 * WebSocket Interface
 
 ### General Info

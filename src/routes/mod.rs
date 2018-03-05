@@ -25,10 +25,10 @@ pub fn create_router() -> Chain {
 
     users_router.post("/create", handler.user_create, "create_user");
     users_router.post("/login", handler.user_login, "login");
-    users_router.get("/my_info", auth_only(handler.user_info, redis), "my_info");
+    users_router.get("/my_info", auth_only(handler.user_info, redis.clone()), "my_info");
 
     let mut ingredient_router = Router::new();
-    ingredient_router.get("/list", handler.ingredient_list, "ingredient_list");
+    ingredient_router.get("/list", auth_only(handler.ingredient_list, redis.clone()), "ingredient_list");
 
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");
