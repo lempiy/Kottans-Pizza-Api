@@ -9,10 +9,10 @@ const DEFAULT_LIMIT:i64 = 100;
 
 #[derive(Serialize, Debug)]
 pub struct Ingredient {
-    pub id: i64,
+    pub id: i32,
     pub name: String,
     pub description: Option<String>,
-    pub img_url: String,
+    pub image_url: String,
     pub price: f64,
     pub created_date: DateTime<Utc>,
 }
@@ -40,9 +40,9 @@ impl Ingredient {
             DEFAULT_LIMIT
         };
         match db.query(
-            "SELECT id, name, description, img_url, price, created_date \
-             FROM ingredient ORDER BY id LIMIT=$1 OFFSET=$2;",
-            &[&offset, &limit],
+            "SELECT id, name, description, image_url, price, created_date \
+             FROM ingredient ORDER BY id LIMIT $1 OFFSET $2;",
+            &[&limit, &offset],
         ) {
             Ok(query) => {
                 let count = match Ingredient::get_records_count(db) {
@@ -60,7 +60,7 @@ impl Ingredient {
                         id: row.get("id"),
                         name: row.get("name"),
                         description: row.get("description"),
-                        img_url: row.get("img_url"),
+                        image_url: row.get("image_url"),
                         price: row.get("price"),
                         created_date: row.get("created_date"),
                     };

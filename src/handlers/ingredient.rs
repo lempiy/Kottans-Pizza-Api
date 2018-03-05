@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
-use iron::{status, Handler, IronResult, Request, Response, Plugin};
+use iron::{status, headers, Handler, IronResult, Request, Response, Plugin};
 use serde_json;
 use params::{Params, Value, Map};
 use models::ingredient::Ingredient;
@@ -19,24 +19,22 @@ impl GetIngredientListHandler {
 
 impl Handler for GetIngredientListHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
-        println!("In {}", "as");
+        req.headers.remove::<headers::ContentType>();
         let map:&Map = try_handler!(req.get_ref::<Params>());
-        println!("after {}", "as");
         let offset = match map.find(&["offset"]) {
-            Some(&Value::I64(ref n)) if *n > 0 => {
-                Some(n.to_owned())
+            Some(&Value::String(ref s)) => {
+                s.to_owned().parse::<i64>().ok()
             },
             _ => None,
         };
         let limit = match map.find(&["limit"]) {
-            Some(&Value::I64(ref n)) if *n > 0 => {
-                Some(n.to_owned())
+            Some(&Value::String(ref s)) => {
+                s.to_owned().parse::<i64>().ok()
             },
             _ => None,
         };
         let mg = self.database.lock().unwrap();
         let response = try_handler!(Ingredient::get_some(&mg, offset, limit));
-        println!("HE {:?}", response);
         let res: String = try_handler!(serde_json::to_string(&response));
         Ok(Response::with((status::Ok, res)))
     }
