@@ -27,11 +27,15 @@ pub fn create_router() -> Chain {
     users_router.post("/login", handler.user_login, "login");
     users_router.get("/my_info", auth_only(handler.user_info, redis), "my_info");
 
+    let mut ingredient_router = Router::new();
+    ingredient_router.get("/list", handler.ingredient_list, "ingredient_list");
+
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");
 
     let mut mount = Mount::new();
     mount.mount("/api/v1/user", users_router);
+    mount.mount("/api/v1/ingredient", ingredient_router);
     mount.mount("/", index_router);
 
     apply_middlewares(mount)

@@ -18,6 +18,7 @@ extern crate uuid;
 extern crate validator;
 #[macro_use]
 extern crate validator_derive;
+extern crate params;
 
 mod models;
 mod handlers;

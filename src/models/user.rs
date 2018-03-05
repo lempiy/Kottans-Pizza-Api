@@ -62,7 +62,7 @@ impl User {
                 &user.last_login,
             ],
         ) {
-            Err(e)
+            Err(Error::from(e))
         } else {
             Ok(user)
         }
@@ -103,7 +103,7 @@ impl User {
                     Ok(None)
                 }
             }
-            Err(err) => Err(err),
+            Err(err) => Err(Error::from(err)),
         }
     }
 
@@ -140,7 +140,7 @@ impl User {
                     Ok(None)
                 }
             }
-            Err(err) => Err(err),
+            Err(err) => Err(Error::from(err)),
         }
     }
 

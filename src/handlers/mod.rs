@@ -1,6 +1,7 @@
 #[macro_use]
 mod macros;
 mod user;
+mod ingredient;
 
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
@@ -12,6 +13,8 @@ pub struct Handlers {
     pub user_login: user::UserLoginHandler,
     pub user_info: user::UserInfoHandler,
 
+    pub ingredient_list: ingredient::GetIngredientListHandler,
+
     pub index_handler: IndexHandler,
 }
 
@@ -22,6 +25,8 @@ impl Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone(), rds.clone()),
             user_info: user::UserInfoHandler::new(database.clone()),
+
+            ingredient_list: ingredient::GetIngredientListHandler::new(database.clone()),
 
             index_handler: IndexHandler::new(),
         }
