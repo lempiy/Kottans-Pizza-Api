@@ -90,4 +90,26 @@ INSERT INTO ingredient VALUES(12, 'meat-roll', 'meat-roll', 'static/images/rulet
 INSERT INTO ingredient VALUES(13, 'cheese', 'cheese', 'static/images/syr.png', '1.2', now());
 INSERT INTO ingredient VALUES(14, 'omelet', 'omelet', 'static/images/yayco.png', '0.7', now());
 
+--category
+CREATE TABLE tag (
+    id serial primary key,
+    name varchar(1000) not null,
+    description text
+);
+
+CREATE TRIGGER countrows
+  AFTER INSERT OR DELETE on tag
+  FOR EACH ROW EXECUTE PROCEDURE count_rows();
+
+DELETE FROM rowcount WHERE table_name = 'tag';
+
+INSERT INTO rowcount (table_name, total_rows)
+VALUES  ('tag',  0);
+
+INSERT INTO tag VALUES(1, 'no-salt', 'Pizza with salt excluded.', 1);
+INSERT INTO tag VALUES(2, 'no-crust', 'Pizza without crust.', 0);
+INSERT INTO tag VALUES(3, 'hot', 'Hot pizza.', 0);
+INSERT INTO tag VALUES(4, 'hard-baked', 'Hard baked crust.', 0);
+INSERT INTO tag VALUES(5, 'rye-crust', 'Pizza with rye crust.', 0);
+
 COMMIT;
