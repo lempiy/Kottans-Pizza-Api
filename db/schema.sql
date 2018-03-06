@@ -1,8 +1,8 @@
 BEGIN;
 
 --store
-DROP TABLE IF EXISTS stores cascade;
-CREATE TABLE stores(
+DROP TABLE IF EXISTS store cascade;
+CREATE TABLE store(
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
     lat REAL NOT NULL,
@@ -15,16 +15,54 @@ DROP TABLE IF EXISTS person cascade;
 CREATE TABLE person (
   id SERIAL primary key,
   uuid UUID unique not null,
-  store_id int references stores(id),
+  store_id int references store(id) ON DELETE CASCADE,
   username varchar(100) unique not null,
   email varchar(100) not null,
   password varchar(100) not null,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   last_login TIMESTAMP WITH TIME ZONE
 );
-
 CREATE UNIQUE INDEX uuid_idx ON person (uuid);
 CREATE UNIQUE INDEX username_password_idx ON person (username, password);
+
+--tag
+DROP TABLE IF EXISTS tag cascade;
+CREATE TABLE tag (
+    id serial primary key,
+    name varchar(1000) not null,
+    description text
+);
+
+--pizza
+DROP TABLE IF EXISTS pizza cascade;
+CREATE TABLE pizza (
+    id serial primary key,
+    name varchar(1000) not null,
+    store_id integer references store(id) ON DELETE CASCADE,
+    user_uuid UUID references person(uuid) ON DELETE CASCADE,
+    size integer not null,
+    deleted integer DEFAULT 0,
+    accepted integer DEFAULT 0,
+    price real not null,
+    description text,
+    img_url varchar(1000) not null,
+    created_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_date TIMESTAMP WITH TIME ZONE
+);
+
+CREATE UNIQUE INDEX pizza_user_uuid_idx ON pizza (user_uuid);
+
+--pizza_tag
+DROP TABLE IF EXISTS pizza_tag cascade;
+CREATE TABLE pizza_tag (
+    id BIGSERIAL primary key,
+    store_id integer references store(id) ON DELETE CASCADE,
+    tag_id integer references tag(id) ON DELETE CASCADE,
+    pizza_id integer references pizza(id) ON DELETE CASCADE
+);
+
+CREATE INDEX pizza_tag_tag_id_idx ON pizza_tag (tag_id);
+CREATE INDEX pizza_tag_pizza_id_idx ON pizza_tag (pizza_id);
 
 --partition trigger
 CREATE OR REPLACE FUNCTION init_new_store()
@@ -33,8 +71,9 @@ CREATE OR REPLACE FUNCTION init_new_store()
 	   declare part_id int;
 	   BEGIN
 	      IF (TG_OP = 'INSERT') then
-		 	part_name := 'person_' || new.id::text;
-			part_id := new.id::text;
+            -----------init person partition-----------
+            part_name := 'person_' || new.id::text;
+            part_id := new.id::text;
 	         EXECUTE format(
 	         	'
 				CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (person);
@@ -42,6 +81,7 @@ CREATE OR REPLACE FUNCTION init_new_store()
 					DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
 				CREATE UNIQUE INDEX %4$I ON %1$I (uuid);
 				CREATE UNIQUE INDEX %5$I ON %1$I (username, password);
+				ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
 				',
 				 part_name,
 			 	 part_id,
@@ -49,7 +89,51 @@ CREATE OR REPLACE FUNCTION init_new_store()
 				'uuid_idx_' || part_id,
 				'username_password_idx_' || part_id
 			);
+            --------------------------------------------
+
+			------------init pizza partition------------
+            part_name := 'pizza_' || new.id::text;
+            part_id := new.id::text;
+             EXECUTE format(
+                '
+                CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (pizza);
+                CREATE RULE %3$I AS ON INSERT to pizza WHERE (store_id=%2$s)
+                    DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
+                CREATE UNIQUE INDEX %4$I ON %1$I (user_uuid);
+                ALTER TABLE %1$I ADD FOREIGN KEY (user_uuid) REFERENCES %5$I(uuid) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD PRIMARY KEY(id);
+                ',
+                 part_name,
+                 part_id,
+                'pizza_insert_rule_' || part_id,
+                'pizza_user_uuid_idx_' || part_id,
+                'person_' || part_id
+            );
+            ------------init pizza_tag partition------------
+
+            ------------------------------------------------
+            part_name := 'pizza_tag_' || new.id::text;
+            part_id := new.id::text;
+             EXECUTE format(
+                '
+                CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (pizza_tag);
+                CREATE RULE %3$I AS ON INSERT to pizza_tag WHERE (store_id=%2$s)
+                    DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
+                CREATE INDEX %4$I ON %1$I (tag_id);
+                CREATE INDEX %5$I ON %1$I (pizza_id);
+                ALTER TABLE %1$I ADD FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD FOREIGN KEY (pizza_id) REFERENCES  %6$I(id) ON DELETE CASCADE;
+                ',
+                 part_name,
+                 part_id,
+                'pizza_tag__insert_rule_' || part_id,
+                'pizza_tag_tag_id_idx_' || part_id,
+                'pizza_tag_pizza_id_idx_' || part_id,
+                'pizza_' || part_id
+            );
+             ------------------------------------------------
 	      ELSIF (TG_OP = 'DELETE') then
+	         -----------drop person partition-----------
 		 	 part_name := 'person_' || old.id::text;
 			 part_id := old.id::text;
 	         EXECUTE format(
@@ -57,13 +141,32 @@ CREATE OR REPLACE FUNCTION init_new_store()
 	         	'person_insert_rule_' || part_id,
 				 part_name
 			);
+			 --------------------------------------------
+
+             ------------drop pizza partition------------
+             part_name := 'pizza_' || old.id::text;
+             part_id := old.id::text;
+             EXECUTE format(
+                'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
+                'pizza_insert_rule_' || part_id,
+                 part_name
+             );
+
+             ------------drop pizza_tag partition---------
+              part_name := 'pizza_tag_' || old.id::text;
+              part_id := old.id::text;
+              EXECUTE format(
+                 'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
+                 'pizza_tag_insert_rule_' || part_id,
+                  part_name
+              );
 	      END IF;
 	      RETURN NULL;
 	   END;
     $init_new_store$ LANGUAGE plpgsql;
 
 CREATE TRIGGER new_store
-    AFTER INSERT OR DELETE on stores
+    AFTER INSERT OR DELETE on store
     FOR EACH ROW EXECUTE PROCEDURE init_new_store();
 
 --counter trigger
@@ -117,14 +220,6 @@ DELETE FROM rowcount WHERE table_name = 'ingredient';
 INSERT INTO rowcount (table_name, total_rows)
 VALUES  ('ingredient',  0);
 
---tag
-DROP TABLE IF EXISTS tag;
-CREATE TABLE tag (
-    id serial primary key,
-    name varchar(1000) not null,
-    description text
-);
-
 CREATE TRIGGER countrows
   AFTER INSERT OR DELETE on tag
   FOR EACH ROW EXECUTE PROCEDURE count_rows();
@@ -135,7 +230,7 @@ INSERT INTO rowcount (table_name, total_rows)
 VALUES  ('tag',  0);
 
 
-INSERT INTO stores VALUES(1, 'Anton Store', 50.38, 30.49, 'q1w2e3r4');
+INSERT INTO store VALUES(1, 'Anton Store', 50.38, 30.49, 'q1w2e3r4');
 
 INSERT INTO person(uuid, username, store_id, email, password, created_at)
   VALUES('d160fe6c-20a1-41d1-a331-2383d6a185ce', 'lempiy', 1, 'lempiy@gmail.com',
