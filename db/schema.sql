@@ -69,26 +69,26 @@ CREATE OR REPLACE FUNCTION init_new_store()
     RETURNS TRIGGER AS $init_new_store$
        declare part_name text;
        declare part_id int;
-	   BEGIN
-	      IF (TG_OP = 'INSERT') then
+       BEGIN
+          IF (TG_OP = 'INSERT') then
             -----------init person partition-----------
             part_name := 'person_' || new.id::text;
             part_id := new.id::text;
-	         EXECUTE format(
-	         	$$
-				CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (person);
-				CREATE RULE %3$I AS ON INSERT to person WHERE (store_id=%2$s)
-					DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
-				CREATE UNIQUE INDEX %4$I ON %1$I (uuid);
-				CREATE UNIQUE INDEX %5$I ON %1$I (username, password);
-				ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
-				$$,
-				 part_name,
-			 	 part_id,
-				'person_insert_rule_' || part_id,
-				'uuid_idx_' || part_id,
-				'username_password_idx_' || part_id
-			);
+             EXECUTE format(
+                $$
+                CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (person);
+                CREATE RULE %3$I AS ON INSERT to person WHERE (store_id=%2$s)
+                    DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
+                CREATE UNIQUE INDEX %4$I ON %1$I (uuid);
+                CREATE UNIQUE INDEX %5$I ON %1$I (username, password);
+                ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
+                $$,
+                 part_name,
+                 part_id,
+                'person_insert_rule_' || part_id,
+                'uuid_idx_' || part_id,
+                'username_password_idx_' || part_id
+            );
             --------------------------------------------
 
             ------------init pizza partition------------
@@ -132,16 +132,16 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 'pizza_' || part_id
             );
              ------------------------------------------------
-	      ELSIF (TG_OP = 'DELETE') then
-	         -----------drop person partition-----------
-		 	 part_name := 'person_' || old.id::text;
-			 part_id := old.id::text;
-	         EXECUTE format(
-	         	'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
-	         	'person_insert_rule_' || part_id,
-				 part_name
-			);
-			 --------------------------------------------
+          ELSIF (TG_OP = 'DELETE') then
+             -----------drop person partition-----------
+             part_name := 'person_' || old.id::text;
+             part_id := old.id::text;
+             EXECUTE format(
+                'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
+                'person_insert_rule_' || part_id,
+                 part_name
+            );
+             --------------------------------------------
 
              ------------drop pizza partition------------
              part_name := 'pizza_' || old.id::text;
@@ -160,9 +160,9 @@ CREATE OR REPLACE FUNCTION init_new_store()
                  'pizza_tag_insert_rule_' || part_id,
                   part_name
               );
-	      END IF;
-	      RETURN NULL;
-	   END;
+          END IF;
+          RETURN NULL;
+       END;
     $init_new_store$ LANGUAGE plpgsql;
 
 CREATE TRIGGER new_store
@@ -177,19 +177,19 @@ CREATE TABLE rowcount (
     PRIMARY KEY (table_name));
 
 CREATE OR REPLACE FUNCTION count_rows()
-	RETURNS TRIGGER AS $count_rows$
-	   BEGIN
-	      IF (TG_OP = 'INSERT') THEN
-	         UPDATE rowcount
-	            SET total_rows = total_rows + 1
-	            WHERE table_name = TG_RELNAME;
-	      ELSIF (TG_OP = 'DELETE') THEN
-	         UPDATE rowcount
-	            SET total_rows = total_rows - 1
-	            WHERE table_name = TG_RELNAME;
-	      END IF;
-	      RETURN NULL;
-	   END;
+    RETURNS TRIGGER AS $count_rows$
+       BEGIN
+          IF (TG_OP = 'INSERT') THEN
+             UPDATE rowcount
+                SET total_rows = total_rows + 1
+                WHERE table_name = TG_RELNAME;
+          ELSIF (TG_OP = 'DELETE') THEN
+             UPDATE rowcount
+                SET total_rows = total_rows - 1
+                WHERE table_name = TG_RELNAME;
+          END IF;
+          RETURN NULL;
+       END;
     $count_rows$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION get_count(text) RETURNS bigint
