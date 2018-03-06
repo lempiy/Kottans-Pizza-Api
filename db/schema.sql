@@ -68,21 +68,21 @@ CREATE INDEX pizza_tag_pizza_id_idx ON pizza_tag (pizza_id);
 CREATE OR REPLACE FUNCTION init_new_store()
     RETURNS TRIGGER AS $init_new_store$
        declare part_name text;
-	   declare part_id int;
+       declare part_id int;
 	   BEGIN
 	      IF (TG_OP = 'INSERT') then
             -----------init person partition-----------
             part_name := 'person_' || new.id::text;
             part_id := new.id::text;
 	         EXECUTE format(
-	         	'
+	         	$$
 				CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (person);
 				CREATE RULE %3$I AS ON INSERT to person WHERE (store_id=%2$s)
 					DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
 				CREATE UNIQUE INDEX %4$I ON %1$I (uuid);
 				CREATE UNIQUE INDEX %5$I ON %1$I (username, password);
 				ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
-				',
+				$$,
 				 part_name,
 			 	 part_id,
 				'person_insert_rule_' || part_id,
@@ -91,18 +91,18 @@ CREATE OR REPLACE FUNCTION init_new_store()
 			);
             --------------------------------------------
 
-			------------init pizza partition------------
+            ------------init pizza partition------------
             part_name := 'pizza_' || new.id::text;
             part_id := new.id::text;
              EXECUTE format(
-                '
+                $$
                 CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (pizza);
                 CREATE RULE %3$I AS ON INSERT to pizza WHERE (store_id=%2$s)
                     DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
                 CREATE UNIQUE INDEX %4$I ON %1$I (user_uuid);
                 ALTER TABLE %1$I ADD FOREIGN KEY (user_uuid) REFERENCES %5$I(uuid) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD PRIMARY KEY(id);
-                ',
+                $$,
                  part_name,
                  part_id,
                 'pizza_insert_rule_' || part_id,
@@ -115,7 +115,7 @@ CREATE OR REPLACE FUNCTION init_new_store()
             part_name := 'pizza_tag_' || new.id::text;
             part_id := new.id::text;
              EXECUTE format(
-                '
+                $$
                 CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (pizza_tag);
                 CREATE RULE %3$I AS ON INSERT to pizza_tag WHERE (store_id=%2$s)
                     DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
@@ -123,7 +123,7 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE INDEX %5$I ON %1$I (pizza_id);
                 ALTER TABLE %1$I ADD FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD FOREIGN KEY (pizza_id) REFERENCES  %6$I(id) ON DELETE CASCADE;
-                ',
+                $$,
                  part_name,
                  part_id,
                 'pizza_tag__insert_rule_' || part_id,
