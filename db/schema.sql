@@ -33,6 +33,17 @@ CREATE TABLE tag (
     description text
 );
 
+--ingredient
+DROP TABLE IF EXISTS ingredient cascade;
+CREATE TABLE ingredient (
+  id serial primary key,
+  name varchar(100) NOT NULL,
+  description text,
+  image_url varchar(1000) NOT NULL,
+  price DOUBLE PRECISION NOT NULL,
+  created_date TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 --pizza
 DROP TABLE IF EXISTS pizza cascade;
 CREATE TABLE pizza (
@@ -63,6 +74,17 @@ CREATE TABLE pizza_tag (
 
 CREATE INDEX pizza_tag_tag_id_idx ON pizza_tag (tag_id);
 CREATE INDEX pizza_tag_pizza_id_idx ON pizza_tag (pizza_id);
+
+DROP TABLE IF EXISTS pizza_ingredient cascade;
+CREATE TABLE pizza_ingredient (
+    id BIGSERIAL primary key,
+    store_id integer references store(id) ON DELETE CASCADE,
+    ingredient_id integer references ingredient(id) ON DELETE CASCADE,
+    pizza_id integer references pizza(id) ON DELETE CASCADE
+);
+
+CREATE INDEX pizza_ingredient_ingredient_id_idx ON pizza_ingredient (ingredient_id);
+CREATE INDEX pizza_ingredient_pizza_id_idx ON pizza_ingredient (pizza_id);
 
 --partition trigger
 CREATE OR REPLACE FUNCTION init_new_store()
@@ -109,9 +131,9 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 'pizza_user_uuid_idx_' || part_id,
                 'person_' || part_id
             );
-            ------------init pizza_tag partition------------
-
             ------------------------------------------------
+
+            ------------init pizza_tag partition------------
             part_name := 'pizza_tag_' || new.id::text;
             part_id := new.id::text;
              EXECUTE format(
@@ -123,6 +145,7 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE INDEX %5$I ON %1$I (pizza_id);
                 ALTER TABLE %1$I ADD FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD FOREIGN KEY (pizza_id) REFERENCES  %6$I(id) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD PRIMARY KEY(id);
                 $$,
                  part_name,
                  part_id,
@@ -132,34 +155,69 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 'pizza_' || part_id
             );
              ------------------------------------------------
+
+             ------------init pizza_ingredient partition------------
+            part_name := 'pizza_ingredient_' || new.id::text;
+            part_id := new.id::text;
+             EXECUTE format(
+                $$
+                CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (pizza_ingredient);
+                CREATE RULE %3$I AS ON INSERT to pizza_ingredient WHERE (store_id=%2$s)
+                    DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
+                CREATE INDEX %4$I ON %1$I (ingredient_id);
+                CREATE INDEX %5$I ON %1$I (pizza_id);
+                ALTER TABLE %1$I ADD FOREIGN KEY (ingredient_id) REFERENCES ingredient(id) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD FOREIGN KEY (pizza_id) REFERENCES  %6$I(id) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD PRIMARY KEY(id);
+                $$,
+                 part_name,
+                 part_id,
+                'pizza_ingredient__insert_rule_' || part_id,
+                'pizza_ingredient_ingredient_id_idx_' || part_id,
+                'pizza_ingredient_pizza_id_idx_' || part_id,
+                'pizza_' || part_id
+            );
+             ---------------------------------------------------
           ELSIF (TG_OP = 'DELETE') then
-             -----------drop person partition-----------
+             -----------drop person partition-------------------
              part_name := 'person_' || old.id::text;
              part_id := old.id::text;
              EXECUTE format(
-                'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
+                'DROP RULE IF EXISTS %I ON person; DROP TABLE IF EXISTS %I CASCADE;',
                 'person_insert_rule_' || part_id,
                  part_name
             );
-             --------------------------------------------
+             ----------------------------------------------------
 
-             ------------drop pizza partition------------
+             ------------drop pizza partition--------------------
              part_name := 'pizza_' || old.id::text;
              part_id := old.id::text;
              EXECUTE format(
-                'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
+                'DROP RULE IF EXISTS %I ON pizza; DROP TABLE IF EXISTS %I CASCADE;',
                 'pizza_insert_rule_' || part_id,
                  part_name
              );
+             -----------------------------------------------------
 
-             ------------drop pizza_tag partition---------
+             ------------drop pizza_tag partition-----------------
               part_name := 'pizza_tag_' || old.id::text;
               part_id := old.id::text;
               EXECUTE format(
-                 'DROP RULE IF EXISTS %I; DROP TABLE IF EXISTS %I; ',
+                 'DROP RULE IF EXISTS %I ON pizza_tag; DROP TABLE IF EXISTS %I CASCADE;',
                  'pizza_tag_insert_rule_' || part_id,
                   part_name
               );
+              ----------------------------------------------------
+
+              ------------drop pizza_ingredient partition---------
+              part_name := 'pizza_ingredient_' || old.id::text;
+              part_id := old.id::text;
+              EXECUTE format(
+                 'DROP RULE IF EXISTS %I ON pizza_ingredient; DROP TABLE IF EXISTS %I CASCADE;',
+                 'pizza_ingredient_insert_rule_' || part_id,
+                  part_name
+              );
+              ----------------------------------------------------
           END IF;
           RETURN NULL;
        END;
@@ -199,17 +257,6 @@ CREATE OR REPLACE FUNCTION get_count(text) RETURNS bigint
 CREATE TRIGGER countrows
   AFTER INSERT OR DELETE on person
   FOR EACH ROW EXECUTE PROCEDURE count_rows();
-
---ingredient
-DROP TABLE IF EXISTS ingredient;
-CREATE TABLE ingredient (
-  id serial primary key,
-  name varchar(100) NOT NULL,
-  description text,
-  image_url varchar(1000) NOT NULL,
-  price DOUBLE PRECISION NOT NULL,
-  created_date TIMESTAMP WITH TIME ZONE NOT NULL
-);
 
 CREATE TRIGGER countrows
   AFTER INSERT OR DELETE on ingredient
