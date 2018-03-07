@@ -104,6 +104,11 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE UNIQUE INDEX %4$I ON %1$I (uuid);
                 CREATE UNIQUE INDEX %5$I ON %1$I (username, password);
                 ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
+                INSERT INTO rowcount (table_name, total_rows)
+                    VALUES  (%1$L,  0);
+                CREATE TRIGGER countrows
+                  AFTER INSERT OR DELETE on %1$I
+                  FOR EACH ROW EXECUTE PROCEDURE count_rows();
                 $$,
                  part_name,
                  part_id,
@@ -255,14 +260,8 @@ CREATE OR REPLACE FUNCTION get_count(text) RETURNS bigint
     LANGUAGE SQL;
 
 CREATE TRIGGER countrows
-  AFTER INSERT OR DELETE on person
-  FOR EACH ROW EXECUTE PROCEDURE count_rows();
-
-CREATE TRIGGER countrows
   AFTER INSERT OR DELETE on ingredient
   FOR EACH ROW EXECUTE PROCEDURE count_rows();
-
-DELETE FROM rowcount WHERE table_name = 'ingredient';
 
 INSERT INTO rowcount (table_name, total_rows)
 VALUES  ('ingredient',  0);
@@ -271,15 +270,13 @@ CREATE TRIGGER countrows
   AFTER INSERT OR DELETE on tag
   FOR EACH ROW EXECUTE PROCEDURE count_rows();
 
-DELETE FROM rowcount WHERE table_name = 'tag';
-
 INSERT INTO rowcount (table_name, total_rows)
 VALUES  ('tag',  0);
 
 
 INSERT INTO store VALUES(1, 'Anton Store', 50.38, 30.49, 'q1w2e3r4');
 
-INSERT INTO person(uuid, username, store_id, email, password, created_at)
+INSERT INTO person_1(uuid, username, store_id, email, password, created_at)
   VALUES('d160fe6c-20a1-41d1-a331-2383d6a185ce', 'lempiy', 1, 'lempiy@gmail.com',
         'q1w2e3r4', now());
 
