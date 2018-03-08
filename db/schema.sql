@@ -129,6 +129,11 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE UNIQUE INDEX %4$I ON %1$I (user_uuid);
                 ALTER TABLE %1$I ADD FOREIGN KEY (user_uuid) REFERENCES %5$I(uuid) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD PRIMARY KEY(id);
+                INSERT INTO rowcount (table_name, total_rows)
+                    VALUES  (%1$L,  0);
+                CREATE TRIGGER countrows
+                  AFTER INSERT OR DELETE on %1$I
+                  FOR EACH ROW EXECUTE PROCEDURE count_rows();
                 $$,
                  part_name,
                  part_id,
@@ -276,7 +281,7 @@ VALUES  ('tag',  0);
 
 INSERT INTO store VALUES(1, 'Anton Store', 50.38, 30.49, 'q1w2e3r4');
 
-INSERT INTO person_1(uuid, username, store_id, email, password, created_at)
+INSERT INTO person(uuid, username, store_id, email, password, created_at)
   VALUES('d160fe6c-20a1-41d1-a331-2383d6a185ce', 'lempiy', 1, 'lempiy@gmail.com',
         'q1w2e3r4', now());
 
