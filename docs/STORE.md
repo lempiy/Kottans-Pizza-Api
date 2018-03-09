@@ -10,7 +10,7 @@ Store Component responsible for read operations over pizza stores.
 
 | Method | Url | Description | Auth required |
 | --- | --- | --- | --- |
-| *GET* | `/api/v1/store/list` | Get list of available stores |  :heavy_check_mark: |
+| *GET* | `/api/v1/store/list` | Get list of available stores |  :heavy_multiplication_x: |
 
 **Request body:** `None`
 
