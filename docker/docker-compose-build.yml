@@ -1,7 +1,7 @@
 version: '3'
 services:
   kottans_pizza:
-    image: lempiy/kottans_pizza_api:v.0.1.5
+    image: lempiy/kottans_pizza_api:v.0.1.6
     environment:
       - PORT=8080
     network_mode: "host"
