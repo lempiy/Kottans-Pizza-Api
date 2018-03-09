@@ -20,7 +20,9 @@ and CRUD operations over pizza management users.
     "username": "lempiy",
     "password": "secret42",
     "password_repeat": "secret42",
-    "email": "lempiy@gmail.com"
+    "email": "lempiy@gmail.com",
+    "store_id": 1,
+    "store_password": "q1w2e3r4"
 }
 ```
 
@@ -31,7 +33,9 @@ and CRUD operations over pizza management users.
 | `username` | *string* | Unique. Min length 2, max - 24 |
 | `password` | *string* | Min length 8 |
 | `password_repeat` | *string* | Should match with `password` |
-|` email` | *string* | Should be valid email |
+| `email` | *string* | Should be valid email |
+| `store_id` | *integer* | Should be existing store id |
+| `store_password` | *string* | Should be valid store password. Min length 8 chars. |
 
 
 *Success Response Status:* - `201 Created`
@@ -55,7 +59,9 @@ and CRUD operations over pizza management users.
         "Passwords do not match",
         "Email is not valid",
         "Password is not valid. Min length is 8",
-        "User with such username already exist"
+        "User with such username already exist",
+        "Wrong store credentials",
+        "Store password is not valid. Min length is 8"
     ]
 }
 ```

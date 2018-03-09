@@ -2,6 +2,8 @@
 
 ### Content
 
+* [Store](STORE.md)
+    * [List](STORE.md#list)
 * [Users and Auth](USERS.md)
 	* [Create User](USERS.md#create-user)
 	* [Login](USERS.md#login)
