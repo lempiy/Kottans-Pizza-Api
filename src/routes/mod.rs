@@ -30,12 +30,16 @@ pub fn create_router() -> Chain {
     let mut ingredient_router = Router::new();
     ingredient_router.get("/list", auth_only(handler.ingredient_list, redis.clone()), "ingredient_list");
 
+    let mut store_router = Router::new();
+    store_router.get("/list", handler.store_list, "store_list");
+
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");
 
     let mut mount = Mount::new();
     mount.mount("/api/v1/user", users_router);
     mount.mount("/api/v1/ingredient", ingredient_router);
+    mount.mount("/api/v1/store", store_router);
     mount.mount("/", index_router);
 
     apply_middlewares(mount)

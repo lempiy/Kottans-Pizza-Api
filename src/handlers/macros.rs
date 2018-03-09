@@ -33,6 +33,27 @@ macro_rules! try_handler {
 }
 
 #[macro_export]
+macro_rules! try_store_id {
+    ($headers:expr) => {
+        match $headers.get_raw("x-store-id") {
+            Some(rows) => try_handler!(
+                try_handler!(
+                    String::from_utf8(rows[0].to_owned())
+                    ).parse::<i32>()
+                ),
+            None => {
+                let response = super::ErrorResponse {
+                    success: false,
+                    error: "No store id found".to_string(),
+                };
+                let res: String = try_handler!(serde_json::to_string(&response));
+                return Ok(Response::with((status::BadRequest, res)))
+            }
+        };
+    };
+}
+
+#[macro_export]
 macro_rules! try_validate {
     ($e:expr) => {
         match $e {

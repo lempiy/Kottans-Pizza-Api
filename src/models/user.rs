@@ -12,6 +12,7 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize)]
 pub struct User {
     pub uuid: Uuid,
+    pub store_id: i32,
     pub username: String,
     pub email: String,
     password: String,
@@ -24,11 +25,13 @@ type Result<T> = result::Result<T, Error>;
 impl User {
     pub fn new(
         db: &MutexGuard<Connection>,
+        store_id: i32,
         username: &str,
         email: &str,
         password: &str,
     ) -> Result<User> {
         let user = User {
+            store_id,
             uuid: Uuid::new_v4(),
             username: username.to_string(),
             email: email.to_string(),
@@ -40,6 +43,7 @@ impl User {
         if let Err(e) = db.execute(
             "INSERT INTO person (\
              uuid, \
+             store_id, \
              username, \
              email, \
              password, \
@@ -51,10 +55,12 @@ impl User {
              $3, \
              $4, \
              $5, \
-             $6\
+             $6, \
+             $7
              )",
             &[
                 &user.uuid,
+                &user.store_id,
                 &user.username,
                 &user.email,
                 &user.password,
@@ -71,20 +77,22 @@ impl User {
     pub fn find(
         db: &MutexGuard<Connection>,
         username: &str,
-        password: &str,
+        password: &str
     ) -> Result<Option<User>> {
         let mut uuid: Option<Uuid> = None;
         let mut email = String::new();
+        let mut store_id = 0i32;
         let mut created_at: Option<DateTime<Utc>> = None;
         let mut last_login: Option<DateTime<Utc>> = None;
         match db.query(
-            "SELECT uuid, email, created_at, last_login \
+            "SELECT uuid, store_id, email, created_at, last_login \
              FROM person WHERE username = $1 AND password=$2",
             &[&username, &password],
         ) {
             Ok(query) => {
                 for row in query.iter() {
                     uuid = Some(row.get("uuid"));
+                    store_id = row.get("store_id");
                     email = row.get("email");
                     created_at = Some(row.get("created_at"));
                     last_login = row.get("last_login");
@@ -93,6 +101,7 @@ impl User {
                 if let Some(uuid) = uuid {
                     Ok(Some(User {
                         uuid,
+                        store_id,
                         username: username.to_string(),
                         email,
                         password: username.to_string(),
@@ -107,20 +116,22 @@ impl User {
         }
     }
 
-    pub fn get(db: &MutexGuard<Connection>, uuid: Uuid) -> Result<Option<User>> {
+    pub fn get(db: &MutexGuard<Connection>, uuid: Uuid, s_id: i32) -> Result<Option<User>> {
         let mut username: Option<String> = None;
+        let mut store_id = 0i32;
         let mut password = String::new();
         let mut email = String::new();
         let mut created_at: Option<DateTime<Utc>> = None;
         let mut last_login: Option<DateTime<Utc>> = None;
         match db.query(
-            "SELECT username, email, password, created_at, last_login \
-             FROM person WHERE uuid = $1",
+            format!("SELECT username, store_id, email, password, created_at, last_login \
+             FROM person_{} WHERE uuid = $1", s_id).as_ref(),
             &[&uuid],
         ) {
             Ok(query) => {
                 for row in query.iter() {
                     username = Some(row.get("username"));
+                    store_id = row.get("store_id");
                     email = row.get("email");
                     password = row.get("password");
                     created_at = Some(row.get("created_at"));
@@ -130,6 +141,7 @@ impl User {
                 if let Some(username) = username {
                     Ok(Some(User {
                         uuid,
+                        store_id,
                         username,
                         email,
                         password,

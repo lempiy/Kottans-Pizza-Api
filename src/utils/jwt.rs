@@ -13,14 +13,16 @@ pub struct Claims {
     exp: i64,
     pub username: String,
     pub uuid: Uuid,
+    pub store_id: i32,
 }
 
-pub fn generate(username: &str, uuid: Uuid, secret: String, exp: i64) -> Result<String> {
-    let full_secret = format!("{}_{}", secret, exp);
+pub fn generate(username: &str, uuid: Uuid, secret: String, exp: i64, store_id: i32) -> Result<String> {
+    let full_secret = format!("{}_{}_{}", store_id, secret, exp);
     let claims = Claims {
         exp,
         username: username.to_string(),
         uuid,
+        store_id
     };
 
     encode(&Header::default(), &claims, full_secret.as_ref())
@@ -51,6 +53,7 @@ pub fn check(rds: &MutexGuard<Connection>, token: String) -> Result<TokenData<Cl
         (b64[0].to_owned() + "." + b64[1]),
         claims.exp,
         secret,
+        claims.store_id,
     ) {
         if valid {
             Ok(TokenData {
@@ -79,8 +82,9 @@ fn verify_signature(
     signature_input: String,
     exp: i64,
     secret: String,
+    store_id: i32,
 ) -> Result<bool> {
-    let full_secret = format!("{}_{}", secret, exp);
+    let full_secret = format!("{}_{}_{}", store_id, secret, exp);
     verify(
         signature.as_ref(),
         signature_input.as_ref(),

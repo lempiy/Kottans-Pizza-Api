@@ -4,6 +4,7 @@ use iron::headers::{Authorization, Bearer};
 use iron::{status, Handler, IronResult, Request, Response};
 use std::io::Read;
 use models::user::User;
+use models::store::Store;
 use uuid::Uuid;
 use serde_json;
 use std::error::Error;
@@ -37,6 +38,9 @@ struct CreateUserRequest {
     password: String,
     #[validate(must_match(other = "password", message = "Passwords do not match"))]
     password_repeat: String,
+    store_id: i32,
+    #[validate(length(min = "8", message = "Store password is not valid. Min length is 8"))]
+    store_password: String,
 }
 
 #[derive(Serialize)]
@@ -52,15 +56,17 @@ impl Handler for UserCreateHandler {
         let user_data: CreateUserRequest =
             try_handler!(serde_json::from_str(payload.as_ref()), status::BadRequest);
         let mg = self.database.lock().unwrap();
-
         try_validate!(
             user_data.validate(),
             vec![
+                Store::validate_correct_store(&mg, user_data.store_id, user_data.store_password.as_ref()),
                 User::validate_unique_username(&mg, user_data.username.as_ref()),
             ]
         );
+
         let user: User = try_handler!(User::new(
             &mg,
+            user_data.store_id,
             user_data.username.as_ref(),
             user_data.email.as_ref(),
             user_data.password.as_ref(),
@@ -114,10 +120,11 @@ impl Handler for UserLoginHandler {
         try_validate!(user_data.validate());
         let mg = self.database.lock().unwrap();
         let rds = self.rds.lock().unwrap();
+
         let result: Option<User> = try_handler!(User::find(
             &mg,
             user_data.username.as_ref(),
-            user_data.password.as_ref(),
+            user_data.password.as_ref()
         ));
 
         if let Some(user) = result {
@@ -128,7 +135,8 @@ impl Handler for UserLoginHandler {
                 user.username.as_ref(),
                 user.uuid,
                 secret,
-                exp
+                exp,
+                user.store_id
             ));
             let response = UserLoginResponse {
                 success: true,
@@ -177,7 +185,8 @@ impl Handler for UserInfoHandler {
         );
         let claims: Claims = try_handler!(get_claims(bearer.token.to_owned()));
         let mg = self.database.lock().unwrap();
-        let result: Option<User> = try_handler!(User::get(&mg, claims.uuid));
+        let store_id = try_store_id!(req.headers);
+        let result: Option<User> = try_handler!(User::get(&mg, claims.uuid, store_id));
         match result {
             Some(user) => {
                 let response = UserInfoResponse {

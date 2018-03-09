@@ -30,12 +30,14 @@ impl BeforeMiddleware for AuthBeforeMiddleware {
     fn before(&self, req: &mut Request) -> IronResult<()> {
         let response = r#"{"success": false, "error": "Wrong authorization data"}"#;
         let rds = self.rds.lock().unwrap();
-        match req.headers
+        let result = match req.headers
             .get::<Authorization<Bearer>>()
             .ok_or(StringError("No auth header".to_string()))
         {
             Ok(bearer) => match check(&rds, bearer.token.to_owned()) {
-                Ok(_) => Ok(()),
+                Ok(data) => {
+                    Ok(data.claims.store_id.to_string())
+                },
                 Err(e) => Err(IronError::new(
                     e,
                     (
@@ -53,6 +55,15 @@ impl BeforeMiddleware for AuthBeforeMiddleware {
                     response,
                 ),
             )),
+        };
+
+        match result {
+            Ok(store_id) => {
+                // TODO: use req.extensions.insert instead
+                req.headers.append_raw("x-store-id", store_id.into_bytes());
+                Ok(())
+            },
+            Err(err) => Err(err)
         }
     }
 }
