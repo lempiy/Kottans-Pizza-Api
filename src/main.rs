@@ -19,6 +19,8 @@ extern crate validator;
 #[macro_use]
 extern crate validator_derive;
 extern crate params;
+extern crate rusoto_core;
+extern crate rusoto_s3;
 
 mod models;
 mod handlers;
