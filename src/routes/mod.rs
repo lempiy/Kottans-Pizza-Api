@@ -34,6 +34,9 @@ pub fn create_router() -> Chain {
     let mut ingredient_router = Router::new();
     ingredient_router.get("/list", auth_only(handler.ingredient_list, redis.clone()), "ingredient_list");
 
+    let mut tag_router = Router::new();
+    tag_router.get("/list", auth_only(handler.tag_list, redis.clone()), "tag_list");
+
     let mut store_router = Router::new();
     store_router.get("/list", handler.store_list, "store_list");
 
@@ -43,6 +46,7 @@ pub fn create_router() -> Chain {
     let mut mount = Mount::new();
     mount.mount("/api/v1/user", users_router);
     mount.mount("/api/v1/ingredient", ingredient_router);
+    mount.mount("/api/v1/tag", tag_router);
     mount.mount("/api/v1/store", store_router);
     mount.mount("/", index_router);
 
@@ -53,6 +57,7 @@ fn apply_middlewares(mount: Mount) -> Chain {
     let (logger_before, logger_after) = Logger::new(None);
     let json_content_middleware = middlewares::JsonAfterMiddleware;
     let cors_middleware = CorsMiddleware::with_allow_any(true);
+    let cors_headers_middleware = middlewares::CorsHeadersMiddleware;
     let not_found_middleware = middlewares::NotFound404;
 
     let mut chain = Chain::new(mount);
@@ -61,6 +66,7 @@ fn apply_middlewares(mount: Mount) -> Chain {
         .link_around(cors_middleware)
         .link_after(not_found_middleware)
         .link_after(json_content_middleware)
+        .link_after(cors_headers_middleware)
         .link_after(logger_after);
     chain
 }

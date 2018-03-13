@@ -6,6 +6,7 @@ use utils::types::StringError;
 use utils::jwt::check;
 use iron::modifiers;
 use redis::Connection;
+use iron::headers::AccessControlAllowOrigin;
 
 pub struct JsonAfterMiddleware;
 
@@ -83,5 +84,20 @@ impl AfterMiddleware for NotFound404 {
         } else {
             Err(err)
         }
+    }
+}
+
+pub struct CorsHeadersMiddleware;
+
+impl AfterMiddleware for CorsHeadersMiddleware {
+    fn after(&self, req: &mut Request, mut res: Response) -> IronResult<Response> {
+        match req.headers.get_raw("Access-Control-Request-Method") {
+            Some(value) => {
+                res.headers.set_raw("Access-Control-Allow-Headers",
+                vec![value[0].to_owned()]);
+            },
+            _ => ()
+        };
+        Ok(res)
     }
 }

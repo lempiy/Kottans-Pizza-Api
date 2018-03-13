@@ -58,7 +58,7 @@ CREATE TABLE pizza (
     description text,
     img_url varchar(1000) not null,
     created_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_date TIMESTAMP WITH TIME ZONE
+    preparation_sec integer NOT NULL
 );
 
 CREATE UNIQUE INDEX pizza_user_uuid_idx ON pizza (user_uuid);

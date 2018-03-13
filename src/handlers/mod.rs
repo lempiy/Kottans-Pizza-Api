@@ -3,6 +3,7 @@ mod macros;
 mod user;
 mod ingredient;
 mod store;
+mod tag;
 
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
@@ -15,6 +16,7 @@ pub struct Handlers {
     pub user_info: user::UserInfoHandler,
 
     pub ingredient_list: ingredient::GetIngredientListHandler,
+    pub tag_list: tag::GetTagListHandler,
 
     pub store_list: store::GetStoreListHandler,
 
@@ -30,6 +32,8 @@ impl Handlers {
             user_info: user::UserInfoHandler::new(database.clone()),
 
             ingredient_list: ingredient::GetIngredientListHandler::new(database.clone()),
+
+            tag_list: tag::GetTagListHandler::new(database.clone()),
 
             store_list: store::GetStoreListHandler::new(database.clone()),
 
