@@ -12,13 +12,17 @@ use iron_cors::CorsMiddleware;
 use mount::Mount;
 use std::sync::{Arc, Mutex};
 use redis::Connection;
+use utils::s3_uploader;
+use rusoto_s3::S3;
 
 pub fn create_router() -> Chain {
     env_logger::init().unwrap();
 
     let db = models::create_db_connection();
     let redis = Arc::new(Mutex::new(cache::create_redis_connection()));
-
+    let s3_client = Arc::new(Mutex::new(
+        s3_uploader::configure_s3_client()
+    ));
     let handler = Handlers::new(db, redis.clone());
 
     let mut users_router = Router::new();
