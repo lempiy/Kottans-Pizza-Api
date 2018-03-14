@@ -38,7 +38,7 @@ impl Handler for CreatePizzaHandler {
         let map:&Map = try_handler!(req.get_ref::<Params>());
         match map.find(&["image"]) {
             Some(&Value::File(ref file)) => {
-                println!("{:?}", file.path())
+                println!("{:?}", file.path)
             }
             _ => {
                 println!("no file");
