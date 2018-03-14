@@ -47,7 +47,7 @@ CREATE TABLE ingredient (
 --pizza
 DROP TABLE IF EXISTS pizza cascade;
 CREATE TABLE pizza (
-    id serial primary key,
+    uuid UUID primary key,
     name varchar(1000) not null,
     store_id integer references store(id) ON DELETE CASCADE,
     user_uuid UUID references person(uuid) ON DELETE CASCADE,
@@ -69,22 +69,22 @@ CREATE TABLE pizza_tag (
     id BIGSERIAL primary key,
     store_id integer references store(id) ON DELETE CASCADE,
     tag_id integer references tag(id) ON DELETE CASCADE,
-    pizza_id integer references pizza(id) ON DELETE CASCADE
+    pizza_uuid UUID references pizza(uuid) ON DELETE CASCADE
 );
 
 CREATE INDEX pizza_tag_tag_id_idx ON pizza_tag (tag_id);
-CREATE INDEX pizza_tag_pizza_id_idx ON pizza_tag (pizza_id);
+CREATE INDEX pizza_tag_pizza_uuid_idx ON pizza_tag (pizza_uuid);
 
 DROP TABLE IF EXISTS pizza_ingredient cascade;
 CREATE TABLE pizza_ingredient (
     id BIGSERIAL primary key,
     store_id integer references store(id) ON DELETE CASCADE,
     ingredient_id integer references ingredient(id) ON DELETE CASCADE,
-    pizza_id integer references pizza(id) ON DELETE CASCADE
+    pizza_uuid UUID references pizza(uuid) ON DELETE CASCADE
 );
 
 CREATE INDEX pizza_ingredient_ingredient_id_idx ON pizza_ingredient (ingredient_id);
-CREATE INDEX pizza_ingredient_pizza_id_idx ON pizza_ingredient (pizza_id);
+CREATE INDEX pizza_ingredient_pizza_uuid_idx ON pizza_ingredient (pizza_uuid);
 
 --partition trigger
 CREATE OR REPLACE FUNCTION init_new_store()
@@ -128,7 +128,7 @@ CREATE OR REPLACE FUNCTION init_new_store()
                     DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
                 CREATE UNIQUE INDEX %4$I ON %1$I (user_uuid);
                 ALTER TABLE %1$I ADD FOREIGN KEY (user_uuid) REFERENCES %5$I(uuid) ON DELETE CASCADE;
-                ALTER TABLE %1$I ADD PRIMARY KEY(id);
+                ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
                 INSERT INTO rowcount (table_name, total_rows)
                     VALUES  (%1$L,  0);
                 CREATE TRIGGER countrows
@@ -152,16 +152,16 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE RULE %3$I AS ON INSERT to pizza_tag WHERE (store_id=%2$s)
                     DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
                 CREATE INDEX %4$I ON %1$I (tag_id);
-                CREATE INDEX %5$I ON %1$I (pizza_id);
+                CREATE INDEX %5$I ON %1$I (pizza_uuid);
                 ALTER TABLE %1$I ADD FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE;
-                ALTER TABLE %1$I ADD FOREIGN KEY (pizza_id) REFERENCES  %6$I(id) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD FOREIGN KEY (pizza_uuid) REFERENCES  %6$I(uuid) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD PRIMARY KEY(id);
                 $$,
                  part_name,
                  part_id,
                 'pizza_tag__insert_rule_' || part_id,
                 'pizza_tag_tag_id_idx_' || part_id,
-                'pizza_tag_pizza_id_idx_' || part_id,
+                'pizza_tag_pizza_uuid_idx_' || part_id,
                 'pizza_' || part_id
             );
              ------------------------------------------------
@@ -175,16 +175,16 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE RULE %3$I AS ON INSERT to pizza_ingredient WHERE (store_id=%2$s)
                     DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
                 CREATE INDEX %4$I ON %1$I (ingredient_id);
-                CREATE INDEX %5$I ON %1$I (pizza_id);
+                CREATE INDEX %5$I ON %1$I (pizza_uuid);
                 ALTER TABLE %1$I ADD FOREIGN KEY (ingredient_id) REFERENCES ingredient(id) ON DELETE CASCADE;
-                ALTER TABLE %1$I ADD FOREIGN KEY (pizza_id) REFERENCES  %6$I(id) ON DELETE CASCADE;
+                ALTER TABLE %1$I ADD FOREIGN KEY (pizza_uuid) REFERENCES  %6$I(uuid) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD PRIMARY KEY(id);
                 $$,
                  part_name,
                  part_id,
                 'pizza_ingredient__insert_rule_' || part_id,
                 'pizza_ingredient_ingredient_id_idx_' || part_id,
-                'pizza_ingredient_pizza_id_idx_' || part_id,
+                'pizza_ingredient_pizza_uuid_idx_' || part_id,
                 'pizza_' || part_id
             );
              ---------------------------------------------------
