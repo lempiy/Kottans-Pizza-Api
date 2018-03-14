@@ -24,6 +24,7 @@ pub struct CreatePizzaInput {
     pub preparation_sec: i32,
 }
 
+#[derive(Serialize, Debug)]
 pub struct Pizza {
     pub uuid: Uuid,
     pub name: String,

@@ -4,6 +4,7 @@ mod user;
 mod ingredient;
 mod store;
 mod tag;
+mod pizza;
 
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
