@@ -86,18 +86,3 @@ impl AfterMiddleware for NotFound404 {
         }
     }
 }
-
-pub struct CorsHeadersMiddleware;
-
-impl AfterMiddleware for CorsHeadersMiddleware {
-    fn after(&self, req: &mut Request, mut res: Response) -> IronResult<Response> {
-        match req.headers.get_raw("Access-Control-Request-Method") {
-            Some(value) => {
-                res.headers.set_raw("Access-Control-Allow-Headers",
-                vec![value[0].to_owned()]);
-            },
-            _ => ()
-        };
-        Ok(res)
-    }
-}

@@ -5,16 +5,16 @@ authors = ["Anton Lempiy <lempiyada@gmail.com>"]
 
 [dependencies]
 iron = "0.5"
-iron-cors = "0.5"
+iron-cors = "0.6.0-rc.1"
 router = "0.5"
 logger = "0.3"
 env_logger = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "0.5", features = ["v4", "serde"] }
 jsonwebtoken = "4"
-serde_derive = "1"
-serde = "1"
-serde_json = "1"
+serde_derive = "1.0.29"
+serde = "1.0.29"
+serde_json = "1.0.10"
 postgres = { version = "0.15",  features = ["with-chrono", "with-uuid"] }
 validator = "0.6"
 validator_derive = "0.6"

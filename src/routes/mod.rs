@@ -56,8 +56,7 @@ pub fn create_router() -> Chain {
 fn apply_middlewares(mount: Mount) -> Chain {
     let (logger_before, logger_after) = Logger::new(None);
     let json_content_middleware = middlewares::JsonAfterMiddleware;
-    let cors_middleware = CorsMiddleware::with_allow_any(true);
-    let cors_headers_middleware = middlewares::CorsHeadersMiddleware;
+    let cors_middleware = CorsMiddleware::with_allow_any();
     let not_found_middleware = middlewares::NotFound404;
 
     let mut chain = Chain::new(mount);
@@ -66,7 +65,6 @@ fn apply_middlewares(mount: Mount) -> Chain {
         .link_around(cors_middleware)
         .link_after(not_found_middleware)
         .link_after(json_content_middleware)
-        .link_after(cors_headers_middleware)
         .link_after(logger_after);
     chain
 }

@@ -3,3 +3,4 @@
 **/*.rs.bk
 .idea
 data
+db/stores.sql
