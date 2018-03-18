@@ -54,6 +54,25 @@ macro_rules! try_store_id {
 }
 
 #[macro_export]
+macro_rules! try_user_uuid {
+    ($headers:expr) => {
+        match $headers.get_raw("x-user-uuid") {
+            Some(rows) =>
+                    try_handler!(String::from_utf8(rows[0].to_owned()))
+                ,
+            None => {
+                let response = super::ErrorResponse {
+                    success: false,
+                    error: "No user uuid found".to_string(),
+                };
+                let res: String = try_handler!(serde_json::to_string(&response));
+                return Ok(Response::with((status::BadRequest, res)))
+            }
+        };
+    };
+}
+
+#[macro_export]
 macro_rules! try_validate {
     ($e:expr) => {
         match $e {

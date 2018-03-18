@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use postgres::Connection;
 use iron::headers::ContentType;
 use iron::mime::Mime;
@@ -7,10 +7,14 @@ use iron::mime::SubLevel::FormData;
 use iron::{status, headers, Handler, IronResult, Request, Response, Plugin};
 use serde_json;
 use params::{Params, Value, Map};
-use models::pizza::Pizza;
+use models::pizza::{Pizza, CreatePizzaInput};
 use std::error::Error;
 use utils::types::StringError;
+use utils::s3_uploader::put_object_with_filename;
 use std::fs::File;
+use rusoto_s3::{S3Client, PutObjectOutput};
+use std::str::FromStr;
+use uuid;
 
 struct CreatePizzaData{
     image: File,
@@ -24,11 +28,12 @@ struct CreatePizzaData{
 // Create new pizza
 pub struct CreatePizzaHandler {
     database: Arc<Mutex<Connection>>,
+    s3_client: Arc<Mutex<S3Client>>,
 }
 
 impl CreatePizzaHandler {
-    pub fn new(database: Arc<Mutex<Connection>>) -> CreatePizzaHandler {
-        CreatePizzaHandler { database }
+    pub fn new(database: Arc<Mutex<Connection>>, s3_client: Arc<Mutex<S3Client>>) -> CreatePizzaHandler {
+        CreatePizzaHandler { database, s3_client }
     }
 }
 
@@ -45,6 +50,10 @@ impl Handler for CreatePizzaHandler {
                 return Ok(Response::with((status::BadRequest, res)))
             }
         };
+        let store_id = try_store_id!(req.headers);
+        let user_uuid = try_handler!(
+            uuid::Uuid::from_str(try_user_uuid!(req.headers).as_ref())
+        );
         let map:&Map = try_handler!(req.get_ref::<Params>());
         let create_pizza_data = match extract_pizza_data(map) {
             Some(data) => data,
@@ -57,7 +66,29 @@ impl Handler for CreatePizzaHandler {
                 return Ok(Response::with((status::BadRequest, res)))
             }
         };
-
+        let s3_client = self.s3_client.lock().unwrap();
+        let db = self.database.lock().unwrap();
+        let uid = uuid::Uuid::new_v4();
+        let name = format!("{}_pizza.png", uid);
+        let result:PutObjectOutput =
+            try_handler!(put_object_with_filename(&s3_client,
+                                     "pizza-kottans",
+                                     create_pizza_data.image,
+            name.as_ref()));
+        let input = CreatePizzaInput{
+            uuid: uid,
+            name: create_pizza_data.name,
+            store_id,
+            user_uuid,
+            price: 0.0,
+            size: create_pizza_data.size as i32,
+            description: create_pizza_data.description,
+            tags: create_pizza_data.tags,
+            img_url: name,
+            ingredients: create_pizza_data.ingredients,
+            preparation_sec: 60*3,
+        };
+        try_handler!(Pizza::create(&db, input));
         Ok(Response::with((status::Ok)))
     }
 }
