@@ -11,13 +11,17 @@ use models::pizza::{Pizza, CreatePizzaInput};
 use std::error::Error;
 use utils::types::StringError;
 use utils::s3_uploader::put_object_with_filename;
-use std::fs::File;
+use utils::validator::{ValidationFile, validate_image};
 use rusoto_s3::{S3Client, PutObjectOutput};
+use params::File;
 use std::str::FromStr;
 use uuid;
+use validator::{Validate,ValidationError};
 
+#[derive(Validate)]
 struct CreatePizzaData{
-    image: File,
+    #[validate(custom = "validate_image")]
+    image: ValidationFile,
     name: String,
     size: i64,
     description: Option<String>,
@@ -70,11 +74,13 @@ impl Handler for CreatePizzaHandler {
         let db = self.database.lock().unwrap();
         let uid = uuid::Uuid::new_v4();
         let name = format!("{}_pizza.png", uid);
+        let f = try_handler!(create_pizza_data.image.file.open());
         let result:PutObjectOutput =
             try_handler!(put_object_with_filename(&s3_client,
                                      "pizza-kottans",
-                                     create_pizza_data.image,
+                                     f,
             name.as_ref()));
+
         let input = CreatePizzaInput{
             uuid: uid,
             name: create_pizza_data.name,
@@ -97,12 +103,7 @@ fn extract_pizza_data(map: &Map)-> Option<CreatePizzaData> {
     Some(CreatePizzaData{
         image: match map.find(&["image"]) {
             Some(&Value::File(ref file)) => {
-                match file.open() {
-                    Ok(f) => f,
-                    _ => {
-                        return None
-                    }
-                }
+                ValidationFile{file: file.to_owned()}
             }
             _ => return None
         },
