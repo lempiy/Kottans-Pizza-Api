@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use redis;
 use iron::{status, Handler, IronResult, Request, Response};
+use rusoto_s3::S3Client;
 
 pub struct Handlers {
     pub user_create: user::UserCreateHandler,
@@ -21,11 +22,13 @@ pub struct Handlers {
 
     pub store_list: store::GetStoreListHandler,
 
+    pub pizza_create: pizza::CreatePizzaHandler,
+
     pub index_handler: IndexHandler,
 }
 
 impl Handlers {
-    pub fn new(db: Connection, rds: Arc<Mutex<redis::Connection>>) -> Handlers {
+    pub fn new(db: Connection, rds: Arc<Mutex<redis::Connection>>, s3_client: Arc<Mutex<S3Client>>) -> Handlers {
         let database = Arc::new(Mutex::new(db));
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
@@ -37,6 +40,8 @@ impl Handlers {
             tag_list: tag::GetTagListHandler::new(database.clone()),
 
             store_list: store::GetStoreListHandler::new(database.clone()),
+
+            pizza_create: pizza::CreatePizzaHandler::new(database.clone(), s3_client.clone()),
 
             index_handler: IndexHandler::new(),
         }

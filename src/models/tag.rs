@@ -2,6 +2,10 @@ use std::sync::MutexGuard;
 use postgres::Connection;
 use postgres::Error;
 use std::result;
+use validator::ValidationError;
+use std::collections::HashMap;
+use std::borrow::Cow;
+use postgres::types::ToSql;
 
 const DEFAULT_LIMIT:i64 = 100;
 
@@ -77,6 +81,72 @@ impl Tag {
                 Ok(0)
             }
             Err(err) => Err(Error::from(err)),
+        }
+    }
+
+    pub fn validate_tags_exist(
+        db: &MutexGuard<Connection>,
+        tag_ids: &Vec<i32>,
+    ) -> result::Result<(), ValidationError> {
+        if tag_ids.len() == 0 {
+            return Err(ValidationError {
+                code: Cow::from("wrong_tags"),
+                message: Some(Cow::from("Tags cannot be empty")),
+                params: HashMap::new(),
+            })
+        };
+        let mut query = tag_ids
+            .iter()
+            .enumerate()
+            .fold("SELECT id FROM tag ORDER BY id WHERE id IN (".to_string(),
+                  |acc, x| {
+                      let (i, _) = x;
+                      acc + &format!("${},", i)
+                  });
+        query.pop();
+        query += ")";
+        let ids:Vec<&ToSql> = tag_ids
+            .iter()
+            .map(|x|{
+                let sq:&ToSql = x;
+                sq
+            })
+            .collect();
+        match db.query(&query, &ids) {
+            Ok(query) => {
+                if query.len() == tag_ids.len() {
+                    Ok(())
+                } else {
+                    let result_ids:Vec<i32> = query
+                        .iter()
+                        .map(|row|{
+                            row.get("id")
+                        }).collect();
+                    let missing:Vec<i32> = tag_ids
+                        .iter()
+                        .filter_map(|id| {
+                            match result_ids.iter().find(|x|{
+                                *id == **x
+                            }) {
+                                Some(_) => None,
+                                None => Some(*id)
+                            }
+                        })
+                        .collect();
+                    Err(ValidationError {
+                        code: Cow::from("wrong_tags"),
+                        message: Some(Cow::from(
+                            format!("Tags with ids {:?} are not exist", missing)
+                        )),
+                        params: HashMap::new(),
+                    })
+                }
+            }
+            Err(_) => Err(ValidationError {
+                code: Cow::from("wrong_tags"),
+                message: Some(Cow::from("Cannot tag ids")),
+                params: HashMap::new(),
+            }),
         }
     }
 }

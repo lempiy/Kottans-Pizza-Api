@@ -13,7 +13,6 @@ use mount::Mount;
 use std::sync::{Arc, Mutex};
 use redis::Connection;
 use utils::s3_uploader;
-use rusoto_s3::S3;
 
 pub fn create_router() -> Chain {
     env_logger::init().unwrap();
@@ -23,7 +22,7 @@ pub fn create_router() -> Chain {
     let s3_client = Arc::new(Mutex::new(
         s3_uploader::configure_s3_client()
     ));
-    let handler = Handlers::new(db, redis.clone());
+    let handler = Handlers::new(db, redis.clone(), s3_client.clone());
 
     let mut users_router = Router::new();
 
@@ -40,6 +39,9 @@ pub fn create_router() -> Chain {
     let mut store_router = Router::new();
     store_router.get("/list", handler.store_list, "store_list");
 
+    let mut pizza_router = Router::new();
+    pizza_router.get("/create", handler.pizza_create, "pizza_create");
+
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");
 
@@ -48,6 +50,7 @@ pub fn create_router() -> Chain {
     mount.mount("/api/v1/ingredient", ingredient_router);
     mount.mount("/api/v1/tag", tag_router);
     mount.mount("/api/v1/store", store_router);
+    mount.mount("/api/v1/pizza", pizza_router);
     mount.mount("/", index_router);
 
     apply_middlewares(mount)

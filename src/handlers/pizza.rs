@@ -1,28 +1,31 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use iron::headers::ContentType;
 use iron::mime::Mime;
 use iron::mime::TopLevel::Multipart;
 use iron::mime::SubLevel::FormData;
-use iron::{status, headers, Handler, IronResult, Request, Response, Plugin};
+use iron::{status, Handler, IronResult, Request, Response, Plugin};
 use serde_json;
 use params::{Params, Value, Map};
 use models::pizza::{Pizza, CreatePizzaInput};
 use std::error::Error;
-use utils::types::StringError;
 use utils::s3_uploader::put_object_with_filename;
-use utils::validator::{ValidationFile, validate_image};
-use rusoto_s3::{S3Client, PutObjectOutput};
-use params::File;
+use utils::validator::{ValidationFile, validate_image, validate_pizza_size};
+use rusoto_s3::{S3Client};
 use std::str::FromStr;
 use uuid;
 use validator::{Validate,ValidationError};
+use models::ingredient::Ingredient;
+use models::tag::Tag;
 
 #[derive(Validate)]
 struct CreatePizzaData{
     #[validate(custom = "validate_image")]
     image: ValidationFile,
+    #[validate(length(min = "3", max = "24",
+    message = "Pizza name is not valid. Min length is 3, max - is 24"))]
     name: String,
+    #[validate(custom = "validate_pizza_size")]
     size: i64,
     description: Option<String>,
     tags: Vec<i32>,
@@ -70,17 +73,22 @@ impl Handler for CreatePizzaHandler {
                 return Ok(Response::with((status::BadRequest, res)))
             }
         };
-        let s3_client = self.s3_client.lock().unwrap();
         let db = self.database.lock().unwrap();
+        try_validate!(
+            create_pizza_data.validate(),
+            vec![
+                Ingredient::validate_ingredients_exist(&db, &create_pizza_data.ingredients),
+                Tag::validate_tags_exist(&db, &create_pizza_data.tags),
+            ]
+        );
+        let s3_client = self.s3_client.lock().unwrap();
         let uid = uuid::Uuid::new_v4();
         let name = format!("{}_pizza.png", uid);
         let f = try_handler!(create_pizza_data.image.file.open());
-        let result:PutObjectOutput =
-            try_handler!(put_object_with_filename(&s3_client,
-                                     "pizza-kottans",
-                                     f,
-            name.as_ref()));
-
+        try_handler!(put_object_with_filename(&s3_client,
+                                 "pizza-kottans",
+                                 f,
+        name.as_ref()));
         let input = CreatePizzaInput{
             uuid: uid,
             name: create_pizza_data.name,
@@ -90,7 +98,7 @@ impl Handler for CreatePizzaHandler {
             size: create_pizza_data.size as i32,
             description: create_pizza_data.description,
             tags: create_pizza_data.tags,
-            img_url: name,
+            img_url: format!("static/images/{}", name),
             ingredients: create_pizza_data.ingredients,
             preparation_sec: 60*3,
         };

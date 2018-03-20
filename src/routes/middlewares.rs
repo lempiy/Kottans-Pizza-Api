@@ -6,7 +6,6 @@ use utils::types::StringError;
 use utils::jwt::check;
 use iron::modifiers;
 use redis::Connection;
-use iron::headers::AccessControlAllowOrigin;
 
 pub struct JsonAfterMiddleware;
 

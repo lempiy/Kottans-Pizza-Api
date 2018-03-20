@@ -31,3 +31,10 @@ pub fn validate_image(f: &ValidationFile) -> Result<(), ValidationError> {
         _ => Err(ValidationError::new(("Wrong file MIME type - expected: 'image/png'"))),
     }
 }
+
+pub fn validate_pizza_size(size: i64) -> Result<(), ValidationError> {
+    match size {
+        30i64|45i64|64i64 => Ok(()),
+        _ => Err(ValidationError::new(("Wrong size of pizza, only 30, 45 or 60 allowed"))),
+    }
+}
