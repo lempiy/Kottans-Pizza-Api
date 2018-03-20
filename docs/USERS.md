@@ -117,7 +117,7 @@ and CRUD operations over pizza management users.
 
 | Method | Url | Description | Auth required |
 | --- | --- | --- | --- |
-| *POST* | `/api/v1/user/my_info` | Get personal data of currently authorized user |  :heavy_check_mark: |
+| *GET* | `/api/v1/user/my_info` | Get personal data of currently authorized user |  :heavy_check_mark: |
 
 **Request body:** `None`
 
