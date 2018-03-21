@@ -26,3 +26,4 @@ rusoto_core = "0.32.0"
 rusoto_s3 = "0.32.0"
 rust_decimal = "0.7"
 num-traits = "0.2"
+multipart = { version = "0.12",  features = ["iron"] }

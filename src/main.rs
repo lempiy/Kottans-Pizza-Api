@@ -23,6 +23,7 @@ extern crate rusoto_core;
 extern crate rusoto_s3;
 extern crate rust_decimal;
 extern crate num_traits;
+extern crate multipart;
 
 mod models;
 mod handlers;

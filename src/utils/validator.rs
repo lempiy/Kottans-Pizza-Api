@@ -1,12 +1,12 @@
-use params::File;
 use iron::mime::Mime;
 use iron::mime::TopLevel::Image;
 use iron::mime::SubLevel::Png;
 use validator::ValidationError;
 use serde::ser::{Serialize, Serializer, SerializeStruct};
+use multipart::server::SavedFile;
 
 pub struct ValidationFile{
-    pub file: File
+    pub file: SavedFile
 }
 
 impl Serialize for ValidationFile {

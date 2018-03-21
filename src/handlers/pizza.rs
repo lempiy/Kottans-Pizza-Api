@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use iron::headers::ContentType;
 use iron::mime::Mime;
-use iron::mime::TopLevel::Multipart;
+use iron::mime::TopLevel::Multipart as MPart;
 use iron::mime::SubLevel::FormData;
 use iron::{status, Handler, IronResult, Request, Response, Plugin};
 use serde_json;
@@ -20,6 +20,9 @@ use validator::{Validate,ValidationError};
 use utils::calculator::{calculate_pizza_price, calculate_preparation_time};
 use models::ingredient::Ingredient;
 use models::tag::Tag;
+use std::io::{self, Read, Write};
+use std::fs::File;
+use multipart::server::{Multipart, Entries, SaveResult, SavedFile};
 
 #[derive(Validate)]
 struct CreatePizzaData{
@@ -56,7 +59,7 @@ impl CreatePizzaHandler {
 impl Handler for CreatePizzaHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         match req.headers.get() {
-            Some(&ContentType(Mime(Multipart, FormData, _))) => (),
+            Some(&ContentType(Mime(MPart, FormData, _))) => (),
             _ => {
                 let response = super::ErrorResponse {
                     success: false,
@@ -70,8 +73,7 @@ impl Handler for CreatePizzaHandler {
         let user_uuid = try_handler!(
             uuid::Uuid::from_str(try_user_uuid!(req.headers).as_ref())
         );
-        let map:&Map = try_handler!(req.get_ref::<Params>());
-        let create_pizza_data = match extract_pizza_data(map) {
+        let create_pizza_data = match extract_pizza_data(req) {
             Some(data) => data,
             _ => {
                 let response = super::ErrorResponse {
@@ -93,10 +95,10 @@ impl Handler for CreatePizzaHandler {
         let s3_client = self.s3_client.lock().unwrap();
         let uid = uuid::Uuid::new_v4();
         let name = format!("{}_pizza.png", uid);
-        let f = try_handler!(create_pizza_data.image.file.open());
+        let file = File::open(create_pizza_data.image.file.path.clone()).unwrap();
         try_handler!(put_object_with_filename(&s3_client,
                                  "pizza-kottans",
-                                 f,
+                                 file,
         name.as_ref()));
         let time_prepared = calculate_preparation_time(
             &create_pizza_data.size,
@@ -131,42 +133,72 @@ impl Handler for CreatePizzaHandler {
     }
 }
 
-fn extract_pizza_data(map: &Map)-> Option<CreatePizzaData> {
+fn extract_pizza_data(req: &mut Request)-> Option<CreatePizzaData> {
+    println!("REQ 1");
+    match Multipart::from_request(req) {
+        Ok(mut multipart) => {
+                println!("REQ 2");
+               match multipart.save().temp() {
+                SaveResult::Full(mut entries) => process_entries(entries),
+                _ => None,
+            }
+        }
+        Err(e) => {
+            println!("{:?}", e.multipart_boundary());
+            None
+        }
+    }
+}
+
+fn process_entries(mut entries: Entries)-> Option<CreatePizzaData> {
+    println!("ENTRIES {:?}", entries);
     Some(CreatePizzaData{
-        image: match map.find(&["image"]) {
-            Some(&Value::File(ref file)) => {
-                ValidationFile{file: file.to_owned()}
+        image: match entries.files.get_mut("image") {
+            Some(files) => {
+                if files.len() == 0 {
+                    return None
+                };
+                ValidationFile{file: files.remove(0)}
             }
             _ => return None
         },
-        name: match map.find(&["name"]) {
-            Some(&Value::String(ref s)) => s.to_string(),
+        name:  match entries.fields.get("name") {
+            Some(field) => {
+                field.to_owned()
+            }
             _ => return None
         },
-        description: match map.find(&["description"]) {
-            Some(&Value::String(ref s)) => Some(s.to_string()),
+        description:  match entries.fields.get("description") {
+            Some(field) => {
+                Some(field.to_owned())
+            }
             _ => None
         },
-        size: match map.find(&["size"]) {
-            Some(&Value::I64(ref n)) => *n,
+        size:  match entries.fields.get("size") {
+            Some(field) => {
+                match field.to_owned().parse::<i64>() {
+                    Ok(n) => n,
+                    _ => return None,
+                }
+            }
             _ => return None
         },
-        tags: match map.find(&["tags"]) {
-            Some(&Value::String(ref s)) => {
-                match serde_json::from_str::<Vec<i32>>(s) {
+        tags:  match entries.fields.get("tags") {
+            Some(field) => {
+                match serde_json::from_str::<Vec<i32>>(field) {
                     Ok(ids) => ids,
                     _ => return None
                 }
-            },
+            }
             _ => return None
         },
-        ingredients: match map.find(&["ingredients"]) {
-            Some(&Value::String(ref s)) => {
-                match serde_json::from_str::<Vec<i32>>(s) {
+        ingredients:  match entries.fields.get("ingredients") {
+            Some(field) => {
+                match serde_json::from_str::<Vec<i32>>(field) {
                     Ok(ids) => ids,
                     _ => return None
                 }
-            },
+            }
             _ => return None
         },
     })
