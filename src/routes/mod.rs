@@ -6,6 +6,7 @@ use iron::Handler;
 use iron::prelude::Chain;
 use env_logger;
 use logger::Logger;
+use multipart::server::iron::Intercept;
 
 mod middlewares;
 use iron_cors::CorsMiddleware;
@@ -39,7 +40,10 @@ pub fn create_router() -> Chain {
     store_router.get("/list", handler.store_list, "store_list");
 
     let mut pizza_router = Router::new();
-    pizza_router.post("/create", auth_only(handler.pizza_create, redis.clone()), "pizza_create");
+    let mut chain = Chain::new(handler.pizza_create);
+    chain
+        .link_before(Intercept::default());
+    pizza_router.post("/create", auth_only(chain, redis.clone()), "pizza_create");
 
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");

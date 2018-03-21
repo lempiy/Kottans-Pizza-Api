@@ -2,11 +2,10 @@ use std::sync::{Arc, Mutex};
 use postgres::Connection;
 use iron::headers::ContentType;
 use iron::mime::Mime;
-use iron::mime::TopLevel::Multipart as MPart;
+use iron::mime::TopLevel::Multipart;
 use iron::mime::SubLevel::FormData;
-use iron::{status, Handler, IronResult, Request, Response, Plugin};
+use iron::{status, Handler, IronResult, Request, Response};
 use serde_json;
-use params::{Params, Value, Map};
 use models::pizza::{Pizza, CreatePizzaInput};
 use std::error::Error;
 use utils::s3_uploader::put_object_with_filename;
@@ -20,9 +19,9 @@ use validator::{Validate,ValidationError};
 use utils::calculator::{calculate_pizza_price, calculate_preparation_time};
 use models::ingredient::Ingredient;
 use models::tag::Tag;
-use std::io::{self, Read, Write};
 use std::fs::File;
-use multipart::server::{Multipart, Entries, SaveResult, SavedFile};
+use multipart::server::Entries;
+use utils::types::StringError;
 
 #[derive(Validate)]
 struct CreatePizzaData{
@@ -59,7 +58,7 @@ impl CreatePizzaHandler {
 impl Handler for CreatePizzaHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         match req.headers.get() {
-            Some(&ContentType(Mime(MPart, FormData, _))) => (),
+            Some(&ContentType(Mime(Multipart, FormData, _))) => (),
             _ => {
                 let response = super::ErrorResponse {
                     success: false,
@@ -73,7 +72,9 @@ impl Handler for CreatePizzaHandler {
         let user_uuid = try_handler!(
             uuid::Uuid::from_str(try_user_uuid!(req.headers).as_ref())
         );
-        let create_pizza_data = match extract_pizza_data(req) {
+        let entries = try_handler!(req.extensions.get_mut::<Entries>()
+            .ok_or(StringError("Cannot extract multipart form fields".to_string())));
+        let create_pizza_data = match process_entries(entries) {
             Some(data) => data,
             _ => {
                 let response = super::ErrorResponse {
@@ -133,24 +134,7 @@ impl Handler for CreatePizzaHandler {
     }
 }
 
-fn extract_pizza_data(req: &mut Request)-> Option<CreatePizzaData> {
-    println!("REQ 1");
-    match Multipart::from_request(req) {
-        Ok(mut multipart) => {
-                println!("REQ 2");
-               match multipart.save().temp() {
-                SaveResult::Full(mut entries) => process_entries(entries),
-                _ => None,
-            }
-        }
-        Err(e) => {
-            println!("{:?}", e.multipart_boundary());
-            None
-        }
-    }
-}
-
-fn process_entries(mut entries: Entries)-> Option<CreatePizzaData> {
+fn process_entries(entries: &mut Entries)-> Option<CreatePizzaData> {
     println!("ENTRIES {:?}", entries);
     Some(CreatePizzaData{
         image: match entries.files.get_mut("image") {
