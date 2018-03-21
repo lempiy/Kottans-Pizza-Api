@@ -15,13 +15,13 @@ pub struct CreatePizzaInput {
     pub name: String,
     pub store_id: i32,
     pub user_uuid: Uuid,
-    pub price: f32,
+    pub price: f64,
     pub size: i32,
     pub description: Option<String>,
     pub tags: Vec<i32>,
     pub img_url: String,
     pub ingredients: Vec<i32>,
-    pub preparation_sec: i32,
+    pub time_prepared: DateTime<Utc>,
 }
 
 #[derive(Serialize, Debug)]
@@ -33,13 +33,13 @@ pub struct Pizza {
     pub size: i32,
     pub deleted: bool,
     pub accepted: bool,
-    pub price: f32,
+    pub price: f64,
     pub description: Option<String>,
     pub tags: Vec<Tag>,
     pub img_url: String,
     pub ingredients: Vec<Ingredient>,
     pub created_date: DateTime<Utc>,
-    pub preparation_sec: i32,
+    pub time_prepared: DateTime<Utc>,
 }
 
 type Result<T> = result::Result<T, Error>;
@@ -66,7 +66,7 @@ impl Pizza {
     fn insert_pizza(tx: &Transaction, data: CreatePizzaInput) -> Result<()> {
         if let Err(err) = tx.execute(format!(
             "INSERT INTO pizza_{} (uuid, name, store_id, user_uuid, \
-                size, price, description, img_url, now(), preparation_sec) \
+                size, price, description, img_url, now(), time_prepared) \
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)",
             data.store_id).as_ref(),
         &[
@@ -78,7 +78,7 @@ impl Pizza {
             &data.price,
             &data.description,
             &data.img_url,
-            &data.preparation_sec,
+            &data.time_prepared,
         ]) {
             return Err(Error::from(err))
         };

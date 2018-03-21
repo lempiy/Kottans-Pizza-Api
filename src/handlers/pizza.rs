@@ -13,8 +13,11 @@ use utils::s3_uploader::put_object_with_filename;
 use utils::validator::{ValidationFile, validate_image, validate_pizza_size};
 use rusoto_s3::{S3Client};
 use std::str::FromStr;
+use chrono::DateTime;
+use chrono::offset::Utc;
 use uuid;
 use validator::{Validate,ValidationError};
+use utils::calculator::{calculate_pizza_price, calculate_preparation_time};
 use models::ingredient::Ingredient;
 use models::tag::Tag;
 
@@ -30,6 +33,12 @@ struct CreatePizzaData{
     description: Option<String>,
     tags: Vec<i32>,
     ingredients: Vec<i32>
+}
+
+#[derive(Serialize)]
+struct CreateResponse {
+    success: bool,
+    time_prepared: DateTime<Utc>,
 }
 
 // Create new pizza
@@ -89,21 +98,36 @@ impl Handler for CreatePizzaHandler {
                                  "pizza-kottans",
                                  f,
         name.as_ref()));
+        let time_prepared = calculate_preparation_time(
+            &create_pizza_data.size,
+            create_pizza_data.ingredients.len()
+        );
         let input = CreatePizzaInput{
             uuid: uid,
             name: create_pizza_data.name,
             store_id,
             user_uuid,
-            price: 0.0,
+            price:
+                try_handler!(
+                    calculate_pizza_price(
+                        &db,
+                        &create_pizza_data.ingredients,
+                        &create_pizza_data.size)
+                ),
             size: create_pizza_data.size as i32,
             description: create_pizza_data.description,
             tags: create_pizza_data.tags,
             img_url: format!("static/images/{}", name),
+            time_prepared: time_prepared.clone(),
             ingredients: create_pizza_data.ingredients,
-            preparation_sec: 60*3,
         };
         try_handler!(Pizza::create(&db, input));
-        Ok(Response::with((status::Ok)))
+        let response = CreateResponse {
+            success: true,
+            time_prepared,
+        };
+        let res: String = try_handler!(serde_json::to_string(&response));
+        Ok(Response::with((status::Ok, res)))
     }
 }
 

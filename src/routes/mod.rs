@@ -16,7 +16,6 @@ use utils::s3_uploader;
 
 pub fn create_router() -> Chain {
     env_logger::init().unwrap();
-
     let db = models::create_db_connection();
     let redis = Arc::new(Mutex::new(cache::create_redis_connection()));
     let s3_client = Arc::new(Mutex::new(

@@ -54,11 +54,11 @@ CREATE TABLE pizza (
     size integer not null,
     deleted integer DEFAULT 0,
     accepted integer DEFAULT 0,
-    price real not null,
+    price DOUBLE PRECISION not null,
     description text,
     img_url varchar(1000) not null,
     created_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    preparation_sec integer NOT NULL
+    time_prepared TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 CREATE UNIQUE INDEX pizza_user_uuid_idx ON pizza (user_uuid);
@@ -277,13 +277,6 @@ CREATE TRIGGER countrows
 
 INSERT INTO rowcount (table_name, total_rows)
 VALUES  ('tag',  0);
-
-
-INSERT INTO store VALUES(1, 'Anton Store', 50.38, 30.49, 'q1w2e3r4');
-
-INSERT INTO person(uuid, username, store_id, email, password, created_at)
-  VALUES('d160fe6c-20a1-41d1-a331-2383d6a185ce', 'lempiy', 1, 'lempiy@gmail.com',
-        'q1w2e3r4', now());
 
 INSERT INTO ingredient VALUES(1, 'pineapple', 'pineapple', 'static/images/ananas.png', '0.8', now());
 INSERT INTO ingredient VALUES(2, 'eggplant', 'eggplant', 'static/images/baklazhan.png', '0.9', now());
