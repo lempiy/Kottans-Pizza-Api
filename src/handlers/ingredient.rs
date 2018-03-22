@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 use postgres::Connection;
-use iron::{status, headers, Handler, IronResult, Request, Response, Plugin};
+use iron::{headers, status, Handler, IronResult, Plugin, Request, Response};
 use serde_json;
-use params::{Params, Value, Map};
+use params::{Map, Params, Value};
 use models::ingredient::Ingredient;
 use std::error::Error;
 
@@ -20,17 +20,13 @@ impl GetIngredientListHandler {
 impl Handler for GetIngredientListHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         req.headers.remove::<headers::ContentType>();
-        let map:&Map = try_handler!(req.get_ref::<Params>());
+        let map: &Map = try_handler!(req.get_ref::<Params>());
         let offset = match map.find(&["offset"]) {
-            Some(&Value::String(ref s)) => {
-                s.to_owned().parse::<i64>().ok()
-            },
+            Some(&Value::String(ref s)) => s.to_owned().parse::<i64>().ok(),
             _ => None,
         };
         let limit = match map.find(&["limit"]) {
-            Some(&Value::String(ref s)) => {
-                s.to_owned().parse::<i64>().ok()
-            },
+            Some(&Value::String(ref s)) => s.to_owned().parse::<i64>().ok(),
             _ => None,
         };
         let mg = self.database.lock().unwrap();

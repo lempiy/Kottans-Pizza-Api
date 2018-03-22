@@ -35,9 +35,7 @@ impl BeforeMiddleware for AuthBeforeMiddleware {
             .ok_or(StringError("No auth header".to_string()))
         {
             Ok(bearer) => match check(&rds, bearer.token.to_owned()) {
-                Ok(data) => {
-                    Ok(data.claims)
-                },
+                Ok(data) => Ok(data.claims),
                 Err(e) => Err(IronError::new(
                     e,
                     (
@@ -60,11 +58,13 @@ impl BeforeMiddleware for AuthBeforeMiddleware {
         match result {
             Ok(claims) => {
                 // TODO: use req.extensions.insert instead
-                req.headers.append_raw("x-store-id", claims.store_id.to_string().into_bytes());
-                req.headers.append_raw("x-user-uuid", claims.uuid.to_string().into_bytes());
+                req.headers
+                    .append_raw("x-store-id", claims.store_id.to_string().into_bytes());
+                req.headers
+                    .append_raw("x-user-uuid", claims.uuid.to_string().into_bytes());
                 Ok(())
-            },
-            Err(err) => Err(err)
+            }
+            Err(err) => Err(err),
         }
     }
 }

@@ -10,7 +10,7 @@ use std::borrow::Cow;
 use postgres::types::ToSql;
 use utils::validator::has_unique_elements;
 
-const DEFAULT_LIMIT:i64 = 100;
+const DEFAULT_LIMIT: i64 = 100;
 
 #[derive(Serialize, Debug)]
 pub struct Ingredient {
@@ -29,18 +29,22 @@ pub struct IngredientSet {
     offset: i64,
     limit: i64,
     count: i64,
-    results: Vec<Ingredient>
+    results: Vec<Ingredient>,
 }
 
 impl Ingredient {
     pub fn get_some(
         db: &MutexGuard<Connection>,
         offset: Option<i64>,
-        limit: Option<i64>)
-        -> Result<IngredientSet> {
-        let offset = if let Some(n) = offset{n}else{0i64};
-        let limit = if let Some(n) = limit{
-            if n < DEFAULT_LIMIT {n} else {DEFAULT_LIMIT}
+        limit: Option<i64>,
+    ) -> Result<IngredientSet> {
+        let offset = if let Some(n) = offset { n } else { 0i64 };
+        let limit = if let Some(n) = limit {
+            if n < DEFAULT_LIMIT {
+                n
+            } else {
+                DEFAULT_LIMIT
+            }
         } else {
             DEFAULT_LIMIT
         };
@@ -54,14 +58,14 @@ impl Ingredient {
                     Ok(n) => n,
                     Err(err) => return Err(Error::from(err)),
                 };
-                let mut set = IngredientSet{
+                let mut set = IngredientSet {
                     offset,
                     limit,
                     count,
                     results: Vec::new(),
                 };
                 for row in query.iter() {
-                    let ingredient = Ingredient{
+                    let ingredient = Ingredient {
                         id: row.get("id"),
                         name: row.get("name"),
                         description: row.get("description"),
@@ -77,15 +81,12 @@ impl Ingredient {
         }
     }
 
-    pub fn get_records_count(db: &MutexGuard<Connection>)-> Result<i64> {
-        match db.query(
-            "SELECT get_count($1);",
-            &[&"ingredient"],
-        ) {
+    pub fn get_records_count(db: &MutexGuard<Connection>) -> Result<i64> {
+        match db.query("SELECT get_count($1);", &[&"ingredient"]) {
             Ok(query) => {
                 for row in query.iter() {
                     let count = Ok(row.get(0));
-                    return count
+                    return count;
                 }
                 Ok(0)
             }
@@ -102,65 +103,52 @@ impl Ingredient {
                 code: Cow::from("wrong_ingredients"),
                 message: Some(Cow::from("Ingredients cannot be empty")),
                 params: HashMap::new(),
-            })
+            });
         };
         if !has_unique_elements(ingredient_ids) {
             return Err(ValidationError {
                 code: Cow::from("wrong_tags"),
-                message: Some(Cow::from(
-                    "Ingredients array has duplicate ids"
-                )),
+                message: Some(Cow::from("Ingredients array has duplicate ids")),
                 params: HashMap::new(),
-            })
+            });
         };
-        let mut query = ingredient_ids
-            .iter()
-            .enumerate()
-            .fold("SELECT id FROM ingredient WHERE id IN (".to_string(),
-                  |acc, x| {
-                      let (i, _) = x;
-                      acc + &format!("${},", i+1)
-                  });
+        let mut query = ingredient_ids.iter().enumerate().fold(
+            "SELECT id FROM ingredient WHERE id IN (".to_string(),
+            |acc, x| {
+                let (i, _) = x;
+                acc + &format!("${},", i + 1)
+            },
+        );
         query.pop();
         query += ") ORDER BY id;";
 
-        let ids:Vec<&ToSql> = ingredient_ids
+        let ids: Vec<&ToSql> = ingredient_ids
             .iter()
-            .map(|x|{
-                let sq:&ToSql = x;
+            .map(|x| {
+                let sq: &ToSql = x;
                 sq
             })
             .collect();
         match db.query(&query, &ids) {
-            Ok(query) => {
-                if query.len() == ingredient_ids.len() {
-                    Ok(())
-                } else {
-                    let result_ids:Vec<i32> = query
-                        .iter()
-                        .map(|row|{
-                            row.get("id")
-                        }).collect();
-                    let missing:Vec<i32> = ingredient_ids
-                        .iter()
-                        .filter_map(|id| {
-                            match result_ids.iter().find(|x|{
-                                *id == **x
-                            }) {
-                                Some(_) => None,
-                                None => Some(*id)
-                            }
-                        })
-                        .collect();
-                    Err(ValidationError {
-                        code: Cow::from("wrong_ingredients"),
-                        message: Some(Cow::from(
-                            format!("Ingredients with ids {:?} are not exist", missing)
-                        )),
-                        params: HashMap::new(),
+            Ok(query) => if query.len() == ingredient_ids.len() {
+                Ok(())
+            } else {
+                let result_ids: Vec<i32> = query.iter().map(|row| row.get("id")).collect();
+                let missing: Vec<i32> = ingredient_ids
+                    .iter()
+                    .filter_map(|id| match result_ids.iter().find(|x| *id == **x) {
+                        Some(_) => None,
+                        None => Some(*id),
                     })
-                }
-            }
+                    .collect();
+                Err(ValidationError {
+                    code: Cow::from("wrong_ingredients"),
+                    message: Some(Cow::from(
+                        format!("Ingredients with ids {:?} are not exist", missing),
+                    )),
+                    params: HashMap::new(),
+                })
+            },
             Err(_) => Err(ValidationError {
                 code: Cow::from("wrong_ingredients"),
                 message: Some(Cow::from("Cannot ingredient ids")),

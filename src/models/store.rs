@@ -9,15 +9,13 @@ use std::borrow::Cow;
 #[derive(Serialize, Deserialize)]
 pub struct Store {
     pub id: i32,
-    pub name: String
+    pub name: String,
 }
 
 type Result<T> = result::Result<T, Error>;
 
 impl Store {
-    pub fn get_all(
-        db: &MutexGuard<Connection>
-    ) -> Result<Vec<Store>> {
+    pub fn get_all(db: &MutexGuard<Connection>) -> Result<Vec<Store>> {
         match db.query(
             "SELECT id, name \
              FROM store ORDER BY id;",
@@ -26,9 +24,9 @@ impl Store {
             Ok(query) => {
                 let mut vector = Vec::new();
                 for row in query.iter() {
-                    let store = Store{
+                    let store = Store {
                         id: row.get("id"),
-                        name: row.get("name")
+                        name: row.get("name"),
                     };
                     vector.push(store);
                 }
@@ -38,11 +36,7 @@ impl Store {
         }
     }
 
-    pub fn find(
-        db: &MutexGuard<Connection>,
-        id: i32,
-        password: &str
-    ) -> Result<Option<Store>> {
+    pub fn find(db: &MutexGuard<Connection>, id: i32, password: &str) -> Result<Option<Store>> {
         let mut name: Option<String> = None;
         match db.query(
             "SELECT id, name, password \
@@ -55,10 +49,7 @@ impl Store {
                     break;
                 }
                 if let Some(name) = name {
-                    Ok(Some(Store {
-                        id,
-                        name,
-                    }))
+                    Ok(Some(Store { id, name }))
                 } else {
                     Ok(None)
                 }
@@ -70,20 +61,18 @@ impl Store {
     pub fn validate_correct_store(
         db: &MutexGuard<Connection>,
         id: i32,
-        password: &str
+        password: &str,
     ) -> result::Result<(), ValidationError> {
         match Store::find(db, id, password) {
-            Ok(result) => {
-                if let Some(_) = result {
-                    Ok(())
-                } else {
-                    Err(ValidationError {
-                        code: Cow::from("wrong_store"),
-                        message: Some(Cow::from("Wrong store credentials")),
-                        params: HashMap::new(),
-                    })
-                }
-            }
+            Ok(result) => if let Some(_) = result {
+                Ok(())
+            } else {
+                Err(ValidationError {
+                    code: Cow::from("wrong_store"),
+                    message: Some(Cow::from("Wrong store credentials")),
+                    params: HashMap::new(),
+                })
+            },
             Err(_) => Err(ValidationError {
                 code: Cow::from("wrong_store"),
                 message: Some(Cow::from("Cannot check store credentials")),

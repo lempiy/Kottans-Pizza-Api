@@ -16,13 +16,19 @@ pub struct Claims {
     pub store_id: i32,
 }
 
-pub fn generate(username: &str, uuid: Uuid, secret: String, exp: i64, store_id: i32) -> Result<String> {
+pub fn generate(
+    username: &str,
+    uuid: Uuid,
+    secret: String,
+    exp: i64,
+    store_id: i32,
+) -> Result<String> {
     let full_secret = format!("{}_{}_{}", store_id, secret, exp);
     let claims = Claims {
         exp,
         username: username.to_string(),
         uuid,
-        store_id
+        store_id,
     };
 
     encode(&Header::default(), &claims, full_secret.as_ref())

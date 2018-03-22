@@ -4,18 +4,19 @@ use iron::mime::SubLevel::Png;
 use validator::ValidationError;
 use std::collections::HashMap;
 use std::borrow::Cow;
-use serde::ser::{Serialize, Serializer, SerializeStruct};
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 use multipart::server::SavedFile;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-pub struct ValidationFile{
-    pub file: SavedFile
+pub struct ValidationFile {
+    pub file: SavedFile,
 }
 
 impl Serialize for ValidationFile {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let mut state = serializer.serialize_struct("File", 4)?;
         state.serialize_field("filename", &self.file.filename)?;
@@ -25,40 +26,34 @@ impl Serialize for ValidationFile {
 
 pub fn validate_image(f: &ValidationFile) -> Result<(), ValidationError> {
     match f.file.content_type {
-        Mime(Image, Png, _) => {
-            if f.file.size > 3 << 20 {
-                Err(
-                    ValidationError {
-                        code: Cow::from("wrong_image"),
-                        message: Some(Cow::from("Image is to big, max size is 3 MB")),
-                        params: HashMap::new(),
-                    }
-                )
-            } else {
-                Ok(())
-            }
-        },
-        _ => Err(
-            ValidationError {
+        Mime(Image, Png, _) => if f.file.size > 3 << 20 {
+            Err(ValidationError {
                 code: Cow::from("wrong_image"),
-                message: Some(Cow::from("Wrong file MIME type - expected: 'image/png'")),
+                message: Some(Cow::from("Image is to big, max size is 3 MB")),
                 params: HashMap::new(),
-            }
-        ),
+            })
+        } else {
+            Ok(())
+        },
+        _ => Err(ValidationError {
+            code: Cow::from("wrong_image"),
+            message: Some(Cow::from("Wrong file MIME type - expected: 'image/png'")),
+            params: HashMap::new(),
+        }),
     }
 }
 
 pub fn validate_pizza_size(size: i64) -> Result<(), ValidationError> {
     match size {
-        30i64|45i64|64i64 => Ok(()),
+        30i64 | 45i64 | 64i64 => Ok(()),
         _ => Err(ValidationError::new(("wrong_size"))),
     }
 }
 
 pub fn has_unique_elements<T>(iter: T) -> bool
-    where
-        T: IntoIterator,
-        T::Item: Eq + Hash,
+where
+    T: IntoIterator,
+    T::Item: Eq + Hash,
 {
     let mut uniq = HashSet::new();
     iter.into_iter().all(move |x| uniq.insert(x))

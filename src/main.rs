@@ -11,19 +11,19 @@ extern crate base64;
 extern crate iron_cors;
 extern crate jsonwebtoken as jwt;
 extern crate mount;
+extern crate multipart;
+extern crate num_traits;
+extern crate params;
 extern crate postgres;
 extern crate redis;
+extern crate rusoto_core;
+extern crate rusoto_s3;
+extern crate rust_decimal;
 extern crate serde_json;
 extern crate uuid;
 extern crate validator;
 #[macro_use]
 extern crate validator_derive;
-extern crate params;
-extern crate rusoto_core;
-extern crate rusoto_s3;
-extern crate rust_decimal;
-extern crate num_traits;
-extern crate multipart;
 
 mod models;
 mod handlers;

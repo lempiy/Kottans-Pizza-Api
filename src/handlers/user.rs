@@ -14,7 +14,7 @@ use chrono::{DateTime, Duration, Utc};
 use redis;
 use utils::cache::set_session;
 
-use validator::{Validate,ValidationError};
+use validator::{Validate, ValidationError};
 
 // Create user
 
@@ -59,7 +59,11 @@ impl Handler for UserCreateHandler {
         try_validate!(
             user_data.validate(),
             vec![
-                Store::validate_correct_store(&mg, user_data.store_id, user_data.store_password.as_ref()),
+                Store::validate_correct_store(
+                    &mg,
+                    user_data.store_id,
+                    user_data.store_password.as_ref(),
+                ),
                 User::validate_unique_username(&mg, user_data.username.as_ref()),
             ]
         );

@@ -29,7 +29,11 @@ pub struct Handlers {
 }
 
 impl Handlers {
-    pub fn new(db: Connection, rds: Arc<Mutex<redis::Connection>>, s3_client: Arc<Mutex<S3Client>>) -> Handlers {
+    pub fn new(
+        db: Connection,
+        rds: Arc<Mutex<redis::Connection>>,
+        s3_client: Arc<Mutex<S3Client>>,
+    ) -> Handlers {
         let database = Arc::new(Mutex::new(db));
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),

@@ -19,22 +19,32 @@ pub fn create_router() -> Chain {
     env_logger::init().unwrap();
     let db = models::create_db_connection();
     let redis = Arc::new(Mutex::new(cache::create_redis_connection()));
-    let s3_client = Arc::new(Mutex::new(
-        s3_uploader::configure_s3_client()
-    ));
+    let s3_client = Arc::new(Mutex::new(s3_uploader::configure_s3_client()));
     let handler = Handlers::new(db, redis.clone(), s3_client.clone());
 
     let mut users_router = Router::new();
 
     users_router.post("/create", handler.user_create, "create_user");
     users_router.post("/login", handler.user_login, "login");
-    users_router.get("/my_info", auth_only(handler.user_info, redis.clone()), "my_info");
+    users_router.get(
+        "/my_info",
+        auth_only(handler.user_info, redis.clone()),
+        "my_info",
+    );
 
     let mut ingredient_router = Router::new();
-    ingredient_router.get("/list", auth_only(handler.ingredient_list, redis.clone()), "ingredient_list");
+    ingredient_router.get(
+        "/list",
+        auth_only(handler.ingredient_list, redis.clone()),
+        "ingredient_list",
+    );
 
     let mut tag_router = Router::new();
-    tag_router.get("/list", auth_only(handler.tag_list, redis.clone()), "tag_list");
+    tag_router.get(
+        "/list",
+        auth_only(handler.tag_list, redis.clone()),
+        "tag_list",
+    );
 
     let mut store_router = Router::new();
     store_router.get("/list", handler.store_list, "store_list");
@@ -42,10 +52,13 @@ pub fn create_router() -> Chain {
     let mut pizza_router = Router::new();
     let mut chain = Chain::new(handler.pizza_create);
     let interceptor = Intercept::default().file_size_limit(5 << 20);
-    chain
-        .link_before(interceptor);
+    chain.link_before(interceptor);
     pizza_router.post("/create", auth_only(chain, redis.clone()), "pizza_create");
-    pizza_router.get("/list", auth_only(handler.pizza_list,redis.clone()), "pizza_list");
+    pizza_router.get(
+        "/list",
+        auth_only(handler.pizza_list, redis.clone()),
+        "pizza_list",
+    );
 
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");

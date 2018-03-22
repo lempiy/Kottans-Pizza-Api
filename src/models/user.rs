@@ -77,7 +77,7 @@ impl User {
     pub fn find(
         db: &MutexGuard<Connection>,
         username: &str,
-        password: &str
+        password: &str,
     ) -> Result<Option<User>> {
         let mut uuid: Option<Uuid> = None;
         let mut email = String::new();
@@ -124,8 +124,11 @@ impl User {
         let mut created_at: Option<DateTime<Utc>> = None;
         let mut last_login: Option<DateTime<Utc>> = None;
         match db.query(
-            format!("SELECT username, store_id, email, password, created_at, last_login \
-             FROM person_{} WHERE uuid = $1", s_id).as_ref(),
+            format!(
+                "SELECT username, store_id, email, password, created_at, last_login \
+                 FROM person_{} WHERE uuid = $1",
+                s_id
+            ).as_ref(),
             &[&uuid],
         ) {
             Ok(query) => {
