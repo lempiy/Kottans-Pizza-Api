@@ -202,7 +202,7 @@ impl Pizza {
     }
 
     pub fn get_records_count(db: &MutexGuard<Connection>, store_id: i32) -> Result<i64> {
-        match db.query("SELECT get_count($1);", &[&format!("pizza_{}", store_id)]) {
+        match db.query("SELECT get_count($1);", &[&format!("pizza_{}_non_accepted", store_id)]) {
             Ok(query) => {
                 for row in query.iter() {
                     let count = Ok(row.get(0));

@@ -138,6 +138,11 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE TRIGGER countrows
                   AFTER INSERT OR DELETE on %1$I
                   FOR EACH ROW EXECUTE PROCEDURE count_rows();
+                INSERT INTO rowcount (table_name, total_rows)
+                    VALUES  (%8$L,  0);
+                CREATE TRIGGER countrows_accepted
+                  AFTER INSERT OR DELETE on %1$I
+                  FOR EACH ROW EXECUTE PROCEDURE count_non_accepted_rows();
                 $$,
                  part_name,
                  part_id,
@@ -145,7 +150,8 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 'pizza_user_uuid_idx_' || part_id,
                 'person_' || part_id,
                 'pizza_accepted_deleted_idx_' || part_id,
-                'pizza_time_prepared_idx_' || part_id
+                'pizza_time_prepared_idx_' || part_id,
+                 part_name || '_non_accepted'
             );
             ------------------------------------------------
 
@@ -238,6 +244,30 @@ CREATE OR REPLACE FUNCTION init_new_store()
           RETURN NULL;
        END;
     $init_new_store$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION count_non_accepted_rows()
+    RETURNS TRIGGER AS $count_rows$
+       BEGIN
+          IF (TG_OP = 'INSERT' AND new.accepted = 0) THEN
+             UPDATE rowcount
+                SET total_rows = total_rows + 1
+                WHERE table_name = TG_RELNAME || '_non_accepted';
+          ELSIF (TG_OP = 'UPDATE' AND new.accepted != old.accepted AND new.accepted = 0) THEN
+             UPDATE rowcount
+                 SET total_rows = total_rows + 1
+                 WHERE table_name = TG_RELNAME || '_non_accepted';
+          ELSIF (TG_OP = 'UPDATE' AND new.accepted != old.accepted AND new.accepted = 1) THEN
+             UPDATE rowcount
+                 SET total_rows = total_rows - 1
+                 WHERE table_name = TG_RELNAME || '_non_accepted';
+          ELSIF (TG_OP = 'DELETE' AND new.accepted = 0) THEN
+             UPDATE rowcount
+                SET total_rows = total_rows - 1
+                WHERE table_name = TG_RELNAME || '_non_accepted';
+          END IF;
+          RETURN NULL;
+       END;
+    $count_rows$ LANGUAGE plpgsql;
 
 CREATE TRIGGER new_store
     AFTER INSERT OR DELETE on store
