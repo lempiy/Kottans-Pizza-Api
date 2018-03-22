@@ -136,7 +136,7 @@ impl Handler for CreatePizzaHandler {
             time_prepared,
         };
         let res: String = try_handler!(serde_json::to_string(&response));
-        Ok(Response::with((status::Ok, res)))
+        Ok(Response::with((status::Created, res)))
     }
 }
 

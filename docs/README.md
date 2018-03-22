@@ -8,9 +8,13 @@
 	* [Create User](USERS.md#create-user)
 	* [Login](USERS.md#login)
 	* [My Info](USERS.md#my-info)
-* Pizza
+* [Pizza](PIZZA.md)
+    * [Unaccepted List](PIZZA.md#list)
+    * [Create Pizza](PIZZA.md#create-pizza)
 * [Ingredient](INGREDIENT.md)
     * [List](INGREDIENT.md#list)
+* [Tag](TAG.md)
+    * [List](TAG.md#list)
 * WebSocket Interface
 
 ### General Info
