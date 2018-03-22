@@ -66,8 +66,8 @@ impl Pizza {
     fn insert_pizza(tx: &Transaction, data: CreatePizzaInput) -> Result<()> {
         if let Err(err) = tx.execute(format!(
             "INSERT INTO pizza_{} (uuid, name, store_id, user_uuid, \
-                size, price, description, img_url, now(), time_prepared) \
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)",
+                size, price, description, img_url, created_date, time_prepared) \
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),$9)",
             data.store_id).as_ref(),
         &[
             &data.uuid,

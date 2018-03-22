@@ -106,13 +106,14 @@ impl Ingredient {
         let mut query = ingredient_ids
             .iter()
             .enumerate()
-            .fold("SELECT id FROM ingredient ORDER BY id WHERE id IN (".to_string(),
+            .fold("SELECT id FROM ingredient WHERE id IN (".to_string(),
                   |acc, x| {
                       let (i, _) = x;
-                      acc + &format!("${},", i)
+                      acc + &format!("${},", i+1)
                   });
         query.pop();
-        query += ")";
+        query += ") ORDER BY id;";
+
         let ids:Vec<&ToSql> = ingredient_ids
             .iter()
             .map(|x|{
@@ -120,6 +121,7 @@ impl Ingredient {
                 sq
             })
             .collect();
+        println!("{} {:?}", query, ids);
         match db.query(&query, &ids) {
             Ok(query) => {
                 if query.len() == ingredient_ids.len() {

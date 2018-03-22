@@ -120,7 +120,7 @@ impl Handler for CreatePizzaHandler {
             size: create_pizza_data.size as i32,
             description: create_pizza_data.description,
             tags: create_pizza_data.tags,
-            img_url: format!("static/images/{}", name),
+            img_url: format!("static/upload/{}", name),
             time_prepared: time_prepared.clone(),
             ingredients: create_pizza_data.ingredients,
         };

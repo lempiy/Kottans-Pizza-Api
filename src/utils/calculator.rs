@@ -23,13 +23,13 @@ pub fn calculate_pizza_price(
     let mut query = ingredient_ids
         .iter()
         .enumerate()
-        .fold("SELECT price FROM ingredient ORDER BY id WHERE id IN (".to_string(),
+        .fold("SELECT price FROM ingredient WHERE id IN (".to_string(),
               |acc, x| {
                   let (i, _) = x;
-                  acc + &format!("${},", i)
+                  acc + &format!("${},", i+1)
               });
     query.pop();
-    query += ")";
+    query += ") ORDER BY id;";
     let ids:Vec<&ToSql> = ingredient_ids
         .iter()
         .map(|x|{
