@@ -4,12 +4,13 @@ use iron::headers::ContentType;
 use iron::mime::Mime;
 use iron::mime::TopLevel::Multipart;
 use iron::mime::SubLevel::FormData;
-use iron::{status, Handler, IronResult, Request, Response};
+use iron::{status, Handler, IronResult, Request, Response, Plugin, headers};
 use serde_json;
 use models::pizza::{Pizza, CreatePizzaInput};
 use std::error::Error;
 use utils::s3_uploader::put_object_with_filename;
 use utils::validator::{ValidationFile, validate_image, validate_pizza_size};
+use params::{Params, Value, Map};
 use rusoto_s3::{S3Client};
 use std::str::FromStr;
 use chrono::DateTime;
@@ -187,4 +188,39 @@ fn process_entries(entries: &mut Entries)-> Option<CreatePizzaData> {
             _ => return None
         },
     })
+}
+
+// Get pizza list
+pub struct GetPizzaListHandler {
+    database: Arc<Mutex<Connection>>,
+}
+
+impl GetPizzaListHandler {
+    pub fn new(database: Arc<Mutex<Connection>>) -> GetPizzaListHandler {
+        GetPizzaListHandler { database }
+    }
+}
+
+impl Handler for GetPizzaListHandler {
+    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+        req.headers.remove::<headers::ContentType>();
+        let store_id = try_store_id!(req.headers);
+        let map:&Map = try_handler!(req.get_ref::<Params>());
+        let offset = match map.find(&["offset"]) {
+            Some(&Value::String(ref s)) => {
+                s.to_owned().parse::<i64>().ok()
+            },
+            _ => None,
+        };
+        let limit = match map.find(&["limit"]) {
+            Some(&Value::String(ref s)) => {
+                s.to_owned().parse::<i64>().ok()
+            },
+            _ => None,
+        };
+        let mg = self.database.lock().unwrap();
+        let response = try_handler!(Pizza::get_non_accepted(&mg, offset, limit, store_id));
+        let res: String = try_handler!(serde_json::to_string(&response));
+        Ok(Response::with((status::Ok, res)))
+    }
 }

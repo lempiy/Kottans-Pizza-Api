@@ -45,6 +45,7 @@ pub fn create_router() -> Chain {
     chain
         .link_before(interceptor);
     pizza_router.post("/create", auth_only(chain, redis.clone()), "pizza_create");
+    pizza_router.get("/list", auth_only(handler.pizza_list,redis.clone()), "pizza_list");
 
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");

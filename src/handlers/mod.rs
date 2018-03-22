@@ -23,6 +23,7 @@ pub struct Handlers {
     pub store_list: store::GetStoreListHandler,
 
     pub pizza_create: pizza::CreatePizzaHandler,
+    pub pizza_list: pizza::GetPizzaListHandler,
 
     pub index_handler: IndexHandler,
 }
@@ -42,6 +43,7 @@ impl Handlers {
             store_list: store::GetStoreListHandler::new(database.clone()),
 
             pizza_create: pizza::CreatePizzaHandler::new(database.clone(), s3_client.clone()),
+            pizza_list: pizza::GetPizzaListHandler::new(database.clone()),
 
             index_handler: IndexHandler::new(),
         }

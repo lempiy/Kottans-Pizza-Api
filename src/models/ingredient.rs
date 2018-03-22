@@ -131,7 +131,6 @@ impl Ingredient {
                 sq
             })
             .collect();
-        println!("{} {:?}", query, ids);
         match db.query(&query, &ids) {
             Ok(query) => {
                 if query.len() == ingredient_ids.len() {
