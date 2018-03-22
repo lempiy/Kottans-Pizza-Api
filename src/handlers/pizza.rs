@@ -25,12 +25,13 @@ use utils::types::StringError;
 
 #[derive(Validate)]
 struct CreatePizzaData{
-    #[validate(custom = "validate_image")]
+    #[validate(custom="validate_image")]
     image: ValidationFile,
     #[validate(length(min = "3", max = "24",
     message = "Pizza name is not valid. Min length is 3, max - is 24"))]
     name: String,
-    #[validate(custom = "validate_pizza_size")]
+    #[validate(custom(function = "validate_pizza_size",
+    message = "Pizza size can be either 30, 45 or 60"))]
     size: i64,
     description: Option<String>,
     tags: Vec<i32>,

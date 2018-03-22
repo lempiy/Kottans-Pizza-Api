@@ -8,6 +8,7 @@ use validator::ValidationError;
 use std::collections::HashMap;
 use std::borrow::Cow;
 use postgres::types::ToSql;
+use utils::validator::has_unique_elements;
 
 const DEFAULT_LIMIT:i64 = 100;
 
@@ -100,6 +101,15 @@ impl Ingredient {
             return Err(ValidationError {
                 code: Cow::from("wrong_ingredients"),
                 message: Some(Cow::from("Ingredients cannot be empty")),
+                params: HashMap::new(),
+            })
+        };
+        if !has_unique_elements(ingredient_ids) {
+            return Err(ValidationError {
+                code: Cow::from("wrong_tags"),
+                message: Some(Cow::from(
+                    "Ingredients array has duplicate ids"
+                )),
                 params: HashMap::new(),
             })
         };

@@ -6,6 +6,7 @@ use validator::ValidationError;
 use std::collections::HashMap;
 use std::borrow::Cow;
 use postgres::types::ToSql;
+use utils::validator::has_unique_elements;
 
 const DEFAULT_LIMIT:i64 = 100;
 
@@ -89,9 +90,14 @@ impl Tag {
         tag_ids: &Vec<i32>,
     ) -> result::Result<(), ValidationError> {
         if tag_ids.len() == 0 {
+            return Ok(())
+        };
+        if !has_unique_elements(tag_ids) {
             return Err(ValidationError {
                 code: Cow::from("wrong_tags"),
-                message: Some(Cow::from("Tags cannot be empty")),
+                message: Some(Cow::from(
+                    "Tags array has duplicate ids"
+                )),
                 params: HashMap::new(),
             })
         };

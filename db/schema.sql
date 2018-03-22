@@ -61,7 +61,8 @@ CREATE TABLE pizza (
     time_prepared TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE UNIQUE INDEX pizza_user_uuid_idx ON pizza (user_uuid);
+CREATE INDEX pizza_user_uuid_idx ON pizza (user_uuid);
+CREATE INDEX pizza_time_prepared_idx ON pizza (time_prepared);
 
 --pizza_tag
 DROP TABLE IF EXISTS pizza_tag cascade;
@@ -126,7 +127,8 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 CREATE TABLE %1$I ( CHECK ( store_id=%2$s ) ) INHERITS (pizza);
                 CREATE RULE %3$I AS ON INSERT to pizza WHERE (store_id=%2$s)
                     DO INSTEAD INSERT INTO %1$I VALUES (NEW.*);
-                CREATE UNIQUE INDEX %4$I ON %1$I (user_uuid);
+                CREATE INDEX %4$I ON %1$I (user_uuid);
+                CREATE INDEX %6$I ON %1$I (time_prepared);
                 ALTER TABLE %1$I ADD FOREIGN KEY (user_uuid) REFERENCES %5$I(uuid) ON DELETE CASCADE;
                 ALTER TABLE %1$I ADD PRIMARY KEY(uuid);
                 INSERT INTO rowcount (table_name, total_rows)
@@ -139,7 +141,8 @@ CREATE OR REPLACE FUNCTION init_new_store()
                  part_id,
                 'pizza_insert_rule_' || part_id,
                 'pizza_user_uuid_idx_' || part_id,
-                'person_' || part_id
+                'person_' || part_id,
+                'pizza_time_prepared_idx_' || part_id
             );
             ------------------------------------------------
 

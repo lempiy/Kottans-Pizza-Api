@@ -101,24 +101,26 @@ impl Pizza {
             },
             Err(err) => return Err(Error::from(err))
         };
-        match tx.prepare(format!(
-            "INSERT INTO pizza_tag_{} (store_id, tag_id, pizza_uuid)\
-                VALUES ($1, $2, $3);",
-            data.store_id
-        ).as_ref()) {
-            Ok(st) => {
-                for tag_id in data.tags.iter() {
-                    if let Err(err) = st.execute(
-                        &[
-                            &data.store_id,
-                            tag_id,
-                            &data.uuid
-                        ]) {
-                        return Err(Error::from(err))
+        if data.tags.len() > 0 {
+            match tx.prepare(format!(
+                "INSERT INTO pizza_tag_{} (store_id, tag_id, pizza_uuid)\
+                    VALUES ($1, $2, $3);",
+                data.store_id
+            ).as_ref()) {
+                Ok(st) => {
+                    for tag_id in data.tags.iter() {
+                        if let Err(err) = st.execute(
+                            &[
+                                &data.store_id,
+                                tag_id,
+                                &data.uuid
+                            ]) {
+                            return Err(Error::from(err))
+                        };
                     };
-                };
-            },
-            Err(err) => return Err(Error::from(err))
+                },
+                Err(err) => return Err(Error::from(err))
+            };
         };
         Ok(())
     }

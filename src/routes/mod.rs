@@ -41,8 +41,9 @@ pub fn create_router() -> Chain {
 
     let mut pizza_router = Router::new();
     let mut chain = Chain::new(handler.pizza_create);
+    let interceptor = Intercept::default().file_size_limit(5 << 20);
     chain
-        .link_before(Intercept::default());
+        .link_before(interceptor);
     pizza_router.post("/create", auth_only(chain, redis.clone()), "pizza_create");
 
     let mut index_router = Router::new();
