@@ -213,4 +213,33 @@ impl Pizza {
             Err(err) => Err(Error::from(err)),
         }
     }
+
+    pub fn get_pizza_by_uuid(db: &MutexGuard<Connection>, uuid: Uuid, store_id: i32) -> Option<PizzaListOutput> {
+        match db.query(&format!("SELECT uuid, user_uuid, store_id, price, \
+                 name, size, description, img_url, accepted, created_date, \
+                 time_prepared from pizza_{} WHERE uuid=$1 LIMIT 1;", store_id),
+        &[&uuid]) {
+            Ok(query) => {
+                if query.len() > 0 {
+                    let row = query.iter().last().unwrap();
+                    Some(PizzaListOutput {
+                        uuid: row.get("uuid"),
+                        name: row.get("name"),
+                        store_id: row.get("store_id"),
+                        user_uuid: row.get("user_uuid"),
+                        size: row.get("size"),
+                        accepted: itob(row.get("accepted")),
+                        price: row.get("price"),
+                        description: row.get("description"),
+                        img_url: row.get("img_url"),
+                        created_date: row.get("created_date"),
+                        time_prepared: row.get("time_prepared"),
+                    })
+                } else {
+                    None
+                }
+            }
+            _ => None
+        }
+    }
 }

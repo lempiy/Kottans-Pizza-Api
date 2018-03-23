@@ -13,7 +13,7 @@ if [ -z "$1" ]
 fi
 
 echo "Building binary..."
-cargo build --release
+cd api && cargo build --release && cd ..
 if [ $? -eq 0 ]; then
     echo "Build for ${NAME} is done!"
 else
@@ -21,7 +21,7 @@ else
 fi
 
 echo "Start building image of ${NAME}..."
-cp target/release/${NAME} docker
+cp api/target/release/${NAME} docker
 docker build -t lempiy/${NAME}:$1 ./docker
 if [ $? -eq 0 ]; then
     echo "Successfully built ${NAME}!"

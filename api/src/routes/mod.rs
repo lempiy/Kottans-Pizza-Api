@@ -14,13 +14,17 @@ use mount::Mount;
 use std::sync::{Arc, Mutex};
 use redis::Connection;
 use utils::s3_uploader;
+use utils::pubsub::Manager;
 
 pub fn create_router() -> Chain {
     env_logger::init().unwrap();
     let db = models::create_db_connection();
-    let redis = Arc::new(Mutex::new(cache::create_redis_connection()));
+    let (connection, pubsub) = cache::create_redis_connection();
+    let redis = Arc::new(Mutex::new(connection));
+    let psm = Manager::new(pubsub, redis.clone());
+    let ps_manager = Arc::new(Mutex::new(psm));
     let s3_client = Arc::new(Mutex::new(s3_uploader::configure_s3_client()));
-    let handler = Handlers::new(db, redis.clone(), s3_client.clone());
+    let handler = Handlers::new(db, redis.clone(), s3_client.clone(), ps_manager.clone());
 
     let mut users_router = Router::new();
 

@@ -23,6 +23,9 @@ use models::tag::Tag;
 use std::fs::File;
 use multipart::server::Entries;
 use utils::types::StringError;
+use std::thread;
+use utils::pubsub::{Manager, PubSubEvent};
+use utils::constants::EVENT_NOTIFY_CREATE;
 
 #[derive(Validate)]
 struct CreatePizzaData {
@@ -47,16 +50,19 @@ struct CreateResponse {
 // Create new pizza
 pub struct CreatePizzaHandler {
     database: Arc<Mutex<Connection>>,
+    ps_manager: Arc<Mutex<Manager>>,
     s3_client: Arc<Mutex<S3Client>>,
 }
 
 impl CreatePizzaHandler {
     pub fn new(
         database: Arc<Mutex<Connection>>,
+        ps_manager: Arc<Mutex<Manager>>,
         s3_client: Arc<Mutex<S3Client>>,
     ) -> CreatePizzaHandler {
         CreatePizzaHandler {
             database,
+            ps_manager,
             s3_client,
         }
     }
@@ -101,6 +107,7 @@ impl Handler for CreatePizzaHandler {
         );
         let s3_client = self.s3_client.lock().unwrap();
         let uid = uuid::Uuid::new_v4();
+        let uid_to_find = uid.clone();
         let name = format!("{}_pizza.png", uid);
         let file = File::open(create_pizza_data.image.file.path.clone()).unwrap();
         try_handler!(put_object_with_filename(
@@ -131,6 +138,19 @@ impl Handler for CreatePizzaHandler {
             ingredients: create_pizza_data.ingredients,
         };
         try_handler!(Pizza::create(&db, input));
+        let mx = self.database.clone();
+        let ps = self.ps_manager.clone();
+        thread::spawn(move ||{
+            let db = mx.lock().unwrap();
+            let ps_manager = ps.lock().unwrap();
+            if let Some(p) = Pizza::get_pizza_by_uuid(&db, uid_to_find, store_id) {
+                let message = serde_json::to_string(&p).unwrap();
+                ps_manager.send(PubSubEvent{
+                    channel: EVENT_NOTIFY_CREATE.to_string(),
+                    message
+                });
+            }
+        });
         let response = CreateResponse {
             success: true,
             time_prepared,
@@ -141,7 +161,6 @@ impl Handler for CreatePizzaHandler {
 }
 
 fn process_entries(entries: &mut Entries) -> Option<CreatePizzaData> {
-    println!("ENTRIES {:?}", entries);
     Some(CreatePizzaData {
         image: match entries.files.get_mut("image") {
             Some(files) => {

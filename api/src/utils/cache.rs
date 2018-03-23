@@ -1,12 +1,14 @@
-use redis::{Client, Commands, Connection, RedisResult};
+use redis::{Client, Commands, Connection, PubSub, RedisResult};
 use std::sync::MutexGuard;
 use uuid::Uuid;
 
-pub fn create_redis_connection() -> Connection {
-    Client::open("redis://127.0.0.1:6379")
-        .expect("Cannot dial redis")
-        .get_connection()
-        .expect("Cannot get redis connection")
+pub fn create_redis_connection() -> (Connection, PubSub) {
+    let client = Client::open("redis://127.0.0.1:6379")
+        .expect("Cannot dial redis");
+    (client.get_connection()
+        .expect("Cannot get redis connection"),
+     client.get_pubsub()
+         .expect("Cannot get redis pubsub"))
 }
 
 pub fn set_session(
