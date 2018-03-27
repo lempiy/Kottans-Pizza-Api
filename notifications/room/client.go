@@ -1,4 +1,4 @@
-package hub
+package room
 
 import "log"
 
@@ -34,7 +34,7 @@ func (c *Client) attachToHub(hub *Hub) {
 		}
 	}
 	c.hub = hub
-	c.hubListener = hub.hubListener
+	c.hubListener = hub.listener
 }
 
 func (c *Client) watch() {
