@@ -5,6 +5,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/json-iterator/go"
 	"log"
+	"sync"
 )
 
 const RedisUrl = "redis://127.0.0.1:6379"
@@ -22,13 +23,15 @@ type KeyHolder interface {
 	RemoveValue(key string) error
 }
 
-type KeyStorage struct {
+type Storage struct {
 	conn redis.Conn
+	mx   *sync.Mutex
 }
 
-func NewKeyStorage(conn redis.Conn) *KeyStorage {
-	return &KeyStorage{
+func NewKeyStorage(conn redis.Conn) *Storage {
+	return &Storage{
 		conn: conn,
+		mx:   &sync.Mutex{},
 	}
 }
 
@@ -39,8 +42,10 @@ type UserData struct {
 	Token    string
 }
 
-func (ks *KeyStorage) GetValue(key string) (*UserData, error) {
+func (ks *Storage) GetValue(key string) (*UserData, error) {
+	ks.mx.Lock()
 	data, err := ks.conn.Do("GET", key)
+	ks.mx.Unlock()
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -54,8 +59,10 @@ func (ks *KeyStorage) GetValue(key string) (*UserData, error) {
 	return ud, jsoniter.UnmarshalFromString(str, ud)
 }
 
-func (ks *KeyStorage) RemoveValue(key string) error {
+func (ks *Storage) RemoveValue(key string) error {
+	ks.mx.Lock()
 	_, err := ks.conn.Do("DEL", key)
+	ks.mx.Unlock()
 	if err != nil {
 		log.Println(err)
 		return err
