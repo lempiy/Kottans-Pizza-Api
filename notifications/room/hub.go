@@ -5,6 +5,7 @@ const (
 	emit
 	add
 	get
+	length
 	die
 )
 
@@ -12,9 +13,10 @@ type commandAction int
 
 type commandData struct {
 	action  commandAction
-	uuid    string
+	key     string
 	storeId int
 	result  <-chan *Client
+	length  <-chan int
 	data    []byte
 	client  *Client
 }
@@ -39,11 +41,14 @@ func (hub *Hub) run() {
 	for command := range hub.listener {
 		switch command.action {
 		case add:
-			hub.pool[command.client.UUID] = command.client
+			hub.pool[command.client.Key] = command.client
+			command.client.attachToHub(hub)
 		case get:
-			command.result <- hub.pool[command.uuid]
+			command.result <- hub.pool[command.key]
 		case remove:
-			delete(hub.pool, command.uuid)
+			delete(hub.pool, command.key)
+		case length:
+			command.length <- len(hub.pool)
 		case emit:
 			for _, client := range hub.pool {
 				client.Send(command.data)
@@ -61,20 +66,29 @@ func (hub *Hub) Add(client *Client) {
 	}
 }
 
-func (hub *Hub) Get(uuid string) *Client {
+func (hub *Hub) Get(key string) *Client {
 	result := make(chan *Client)
 	hub.listener <- commandData{
 		action: get,
-		uuid:   uuid,
+		key:    key,
 		result: result,
 	}
 	return <-result
 }
 
-func (hub *Hub) Remove(uuid string) {
+func (hub *Hub) Length() int {
+	length := make(chan int)
+	hub.listener <- commandData{
+		action: get,
+		length: length,
+	}
+	return <-length
+}
+
+func (hub *Hub) Remove(key string) {
 	hub.listener <- commandData{
 		action: remove,
-		uuid:   uuid,
+		key:    key,
 	}
 }
 
