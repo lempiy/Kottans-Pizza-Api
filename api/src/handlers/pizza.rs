@@ -140,14 +140,14 @@ impl Handler for CreatePizzaHandler {
         try_handler!(Pizza::create(&db, input));
         let mx = self.database.clone();
         let ps = self.ps_manager.clone();
-        thread::spawn(move ||{
+        thread::spawn(move || {
             let db = mx.lock().unwrap();
             let ps_manager = ps.lock().unwrap();
             if let Some(p) = Pizza::get_pizza_by_uuid(&db, uid_to_find, store_id) {
                 let message = serde_json::to_string(&p).unwrap();
-                ps_manager.send(PubSubEvent{
+                ps_manager.send(PubSubEvent {
                     channel: EVENT_NOTIFY_CREATE.to_string(),
-                    message
+                    message,
                 });
             }
         });

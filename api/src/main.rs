@@ -1,24 +1,24 @@
+extern crate base64;
 extern crate chrono;
 extern crate env_logger;
 extern crate iron;
-extern crate logger;
-extern crate router;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-
-extern crate base64;
 extern crate iron_cors;
 extern crate jsonwebtoken as jwt;
+extern crate logger;
 extern crate mount;
 extern crate multipart;
 extern crate num_traits;
 extern crate params;
 extern crate postgres;
+extern crate rand;
 extern crate redis;
+extern crate router;
 extern crate rusoto_core;
 extern crate rusoto_s3;
 extern crate rust_decimal;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 extern crate uuid;
 extern crate validator;

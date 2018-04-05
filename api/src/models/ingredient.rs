@@ -11,7 +11,7 @@ use postgres::types::ToSql;
 use utils::validator::has_unique_elements;
 
 const DEFAULT_LIMIT: i64 = 100;
-const MAX_INGREDIENTS_PER_PIZZA:usize = 6;
+const MAX_INGREDIENTS_PER_PIZZA: usize = 6;
 
 #[derive(Serialize, Debug)]
 pub struct Ingredient {
@@ -109,8 +109,10 @@ impl Ingredient {
         if ingredient_ids.len() > MAX_INGREDIENTS_PER_PIZZA {
             return Err(ValidationError {
                 code: Cow::from("wrong_ingredients"),
-                message: Some(Cow::from(format!("Max mount of ingredients is {}",
-                    MAX_INGREDIENTS_PER_PIZZA))),
+                message: Some(Cow::from(format!(
+                    "Max mount of ingredients is {}",
+                    MAX_INGREDIENTS_PER_PIZZA
+                ))),
                 params: HashMap::new(),
             });
         };

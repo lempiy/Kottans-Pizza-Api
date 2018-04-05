@@ -64,6 +64,13 @@ pub fn create_router() -> Chain {
         "pizza_list",
     );
 
+    let mut ws_router = Router::new();
+    ws_router.get(
+        "/ticket",
+        auth_only(handler.ws_ticket, redis.clone()),
+        "ticket",
+    );
+
     let mut index_router = Router::new();
     index_router.get("/", handler.index_handler, "index");
 
@@ -73,6 +80,7 @@ pub fn create_router() -> Chain {
     mount.mount("/api/v1/tag", tag_router);
     mount.mount("/api/v1/store", store_router);
     mount.mount("/api/v1/pizza", pizza_router);
+    mount.mount("/api/v1/ws", ws_router);
     mount.mount("/", index_router);
 
     apply_middlewares(mount)

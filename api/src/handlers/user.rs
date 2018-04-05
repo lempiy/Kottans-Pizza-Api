@@ -12,7 +12,8 @@ use utils::types::StringError;
 use utils::jwt::{self, get_claims, Claims};
 use chrono::{DateTime, Duration, Utc};
 use redis;
-use utils::cache::set_session;
+use utils::cache::{set_session, set_ws_ticket, WS_TICKET_EXPIRATION_TIME};
+use utils::random_token;
 
 use validator::{Validate, ValidationError};
 
@@ -134,7 +135,13 @@ impl Handler for UserLoginHandler {
         if let Some(user) = result {
             try_handler!(User::update_login(&mg, user.uuid));
             let exp = (Utc::now() + Duration::hours(5)).naive_utc().timestamp();
-            let (secret, device_uuid) = try_handler!(set_session(&rds, user.uuid, Uuid::new_v4(), Uuid::new_v4(), exp));
+            let (secret, device_uuid) = try_handler!(set_session(
+                &rds,
+                user.uuid,
+                Uuid::new_v4(),
+                Uuid::new_v4(),
+                exp
+            ));
             let token = try_handler!(jwt::generate(
                 user.username.as_ref(),
                 user.uuid,
@@ -157,6 +164,46 @@ impl Handler for UserLoginHandler {
             let res: String = try_handler!(serde_json::to_string(&response));
             Ok(Response::with((status::BadRequest, res)))
         }
+    }
+}
+
+// Get ws token
+
+#[derive(Serialize)]
+struct GetWsTokenResponse {
+    success: bool,
+    info: String,
+    token: String,
+}
+
+pub struct UserGetWsTokenHandler {
+    rds: Arc<Mutex<redis::Connection>>,
+}
+
+impl UserGetWsTokenHandler {
+    pub fn new(rds: Arc<Mutex<redis::Connection>>) -> UserGetWsTokenHandler {
+        UserGetWsTokenHandler { rds }
+    }
+}
+
+impl Handler for UserGetWsTokenHandler {
+    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+        let store_id = try_store_id!(req.headers);
+        let user_uuid = try_user_uuid!(req.headers);
+
+        let token = random_token();
+        let rds = self.rds.lock().unwrap();
+        try_handler!(set_ws_ticket(&rds, token.clone(), user_uuid, store_id));
+        let response = GetWsTokenResponse {
+            success: true,
+            info: format!(
+                "Your ws connection token is valid for {}s",
+                WS_TICKET_EXPIRATION_TIME
+            ),
+            token,
+        };
+        let res: String = try_handler!(serde_json::to_string(&response));
+        Ok(Response::with((status::BadRequest, res)))
     }
 }
 

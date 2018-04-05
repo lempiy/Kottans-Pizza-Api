@@ -18,6 +18,8 @@ pub struct Handlers {
     pub user_login: user::UserLoginHandler,
     pub user_info: user::UserInfoHandler,
 
+    pub ws_ticket: user::UserGetWsTokenHandler,
+
     pub ingredient_list: ingredient::GetIngredientListHandler,
     pub tag_list: tag::GetTagListHandler,
 
@@ -41,6 +43,8 @@ impl Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone(), rds.clone()),
             user_info: user::UserInfoHandler::new(database.clone()),
+
+            ws_ticket: user::UserGetWsTokenHandler::new(rds.clone()),
 
             ingredient_list: ingredient::GetIngredientListHandler::new(database.clone()),
 

@@ -36,10 +36,9 @@ func NewKeyStorage(conn redis.Conn) *Storage {
 }
 
 type UserData struct {
-	StoreId  int
-	UUID     string
-	Username string
-	Token    string
+	StoreId int    `json:"store_id"`
+	UUID    string `json:"uuid"`
+	Token   string `json:"token"`
 }
 
 func (ks *Storage) GetValue(key string) (*UserData, error) {
