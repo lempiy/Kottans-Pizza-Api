@@ -1,5 +1,10 @@
 package room
 
+import (
+	"fmt"
+	"log"
+)
+
 const (
 	remove commandAction = iota
 	emit
@@ -33,6 +38,7 @@ func NewHub(id int) *Hub {
 		pool:     make(map[string]*Client),
 		ID:       id,
 	}
+	log.Println(fmt.Sprintf("Hub with ID %d created...", hub.ID))
 	go hub.run()
 	return &hub
 }
@@ -77,12 +83,12 @@ func (hub *Hub) Get(key string) *Client {
 }
 
 func (hub *Hub) Length() int {
-	length := make(chan int)
+	lnth := make(chan int)
 	hub.listener <- commandData{
-		action: get,
-		length: length,
+		action: length,
+		length: lnth,
 	}
-	return <-length
+	return <-lnth
 }
 
 func (hub *Hub) Remove(key string) {
@@ -100,6 +106,7 @@ func (hub *Hub) Emit(msg []byte) {
 }
 
 func (hub *Hub) Die() {
+	log.Println(fmt.Sprintf("Hub with ID %d removed...", hub.ID))
 	hub.listener <- commandData{
 		action: die,
 	}

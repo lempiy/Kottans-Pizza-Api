@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var (
@@ -24,6 +25,17 @@ var (
 		websocket.CloseNormalClosure,
 		websocket.CloseInternalServerErr,
 	}
+)
+
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 30 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
 )
 
 func Handle(cluster *room.Cluster, keyHolder utils.KeyHolder) echo.HandlerFunc {
@@ -71,9 +83,15 @@ func Handle(cluster *room.Cluster, keyHolder utils.KeyHolder) echo.HandlerFunc {
 
 		client = room.NewClient(send, read, die, ud.Token, key, ud.UUID, ud.StoreId)
 		hub.Add(client)
+		deadRead := make(chan struct{})
 
 		go func() {
 			defer ws.Close()
+			ws.SetReadDeadline(time.Now().Add(pongWait))
+			ws.SetPongHandler(func(s string) error {
+				ws.SetReadDeadline(time.Now().Add(pongWait))
+				return nil
+			})
 			for {
 				_, message, err := ws.ReadMessage()
 				if err != nil {
@@ -81,26 +99,45 @@ func Handle(cluster *room.Cluster, keyHolder utils.KeyHolder) echo.HandlerFunc {
 						ws.Close()
 						client.Die()
 						if hub.Length() == 0 {
+							cluster.Remove(hub.ID)
 							hub.Die()
 						}
+						deadRead <- struct{}{}
 						return
 					}
 					ws.Close()
 					client.Die()
 					if hub.Length() == 0 {
+						cluster.Remove(hub.ID)
 						hub.Die()
 					}
+					deadRead <- struct{}{}
 					return
 				}
 				read <- message
 			}
 		}()
-
+		ticker := time.NewTicker(pingPeriod)
 		for {
 			select {
 			case data := <-send:
+				ws.SetWriteDeadline(time.Now().Add(writeWait))
 				err := ws.WriteMessage(websocket.TextMessage, data)
 				if err != nil {
+					log.Println(err)
+				}
+			case <-deadRead:
+				return err
+			case <-ticker.C:
+				ws.SetWriteDeadline(time.Now().Add(writeWait))
+				err := ws.WriteMessage(websocket.PingMessage, []byte{})
+				if err != nil {
+					ws.Close()
+					client.Die()
+					if hub.Length() == 0 {
+						cluster.Remove(hub.ID)
+						hub.Die()
+					}
 					log.Println(err)
 				}
 			case <-interrupt:

@@ -24,6 +24,7 @@ func NewClient(send chan<- []byte, read <-chan []byte, die <-chan struct{}, toke
 		UUID:    uuid,
 		die:     die,
 	}
+	log.Println("Client " + c.Key + " connected...")
 	go c.watch()
 	return c
 }
@@ -57,6 +58,7 @@ func (c *Client) Send(msg []byte) {
 }
 
 func (c *Client) Die() {
+	log.Println("Client " + c.Key + " disconnected...")
 	if c.hubListener != nil {
 		c.hubListener <- commandData{
 			action: remove,
