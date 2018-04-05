@@ -109,7 +109,6 @@ func Handle(cluster *room.Cluster, keyHolder utils.KeyHolder) echo.HandlerFunc {
 					websocket.FormatCloseMessage(websocket.CloseNormalClosure,
 						"Server's gone down"))
 				ws.Close()
-				os.Exit(0)
 				return err
 			}
 		}

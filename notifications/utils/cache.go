@@ -15,7 +15,7 @@ func NewRedisConnection() (redis.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &conn, err
+	return conn, err
 }
 
 type KeyHolder interface {
@@ -37,7 +37,7 @@ func NewKeyStorage(conn redis.Conn) *Storage {
 
 type UserData struct {
 	StoreId int    `json:"store_id"`
-	UUID    string `json:"uuid"`
+	UUID    string `json:"user_uuid"`
 	Token   string `json:"token"`
 }
 
@@ -49,13 +49,13 @@ func (ks *Storage) GetValue(key string) (*UserData, error) {
 		log.Println(err)
 		return nil, err
 	}
-	str, success := data.(string)
+	bts, success := data.([]byte)
 	if !success {
 		log.Println("GetValue", "wrong data type returned from redis")
 		return nil, fmt.Errorf("cannot convert value by key %s to string", key)
 	}
-	var ud *UserData
-	return ud, jsoniter.UnmarshalFromString(str, ud)
+	var ud UserData
+	return &ud, jsoniter.Unmarshal(bts, &ud)
 }
 
 func (ks *Storage) RemoveValue(key string) error {

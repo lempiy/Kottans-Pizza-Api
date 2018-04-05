@@ -15,8 +15,8 @@ type commandData struct {
 	action  commandAction
 	key     string
 	storeId int
-	result  <-chan *Client
-	length  <-chan int
+	result  chan<- *Client
+	length  chan<- int
 	data    []byte
 	client  *Client
 }

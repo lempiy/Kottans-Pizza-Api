@@ -1,6 +1,7 @@
 
 **/target/
 **/*.rs.bk
+notifications/notifications
 .idea
 data
 db/stores.sql

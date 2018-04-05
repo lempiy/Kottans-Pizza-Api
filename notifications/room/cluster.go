@@ -1,14 +1,21 @@
 package room
 
+import (
+	"os"
+	"os/signal"
+	"time"
+)
+
 type commandPayload struct {
 	action commandAction
 	id     int
-	result <-chan *Hub
+	result chan<- *Hub
 	data   []byte
 	hub    *Hub
 }
 
 type Cluster struct {
+	isDying  bool
 	listener chan commandPayload
 	pool     map[int]*Hub
 }
@@ -19,6 +26,13 @@ func NewCluster() *Cluster {
 		pool:     make(map[int]*Hub),
 	}
 	go cluster.run()
+	go func() {
+		interrupt := make(chan os.Signal, 1)
+		signal.Notify(interrupt, os.Interrupt)
+		<-interrupt
+		time.Sleep(time.Second * 2)
+		os.Exit(0)
+	}()
 	return &cluster
 }
 

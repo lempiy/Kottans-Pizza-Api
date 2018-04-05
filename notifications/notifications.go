@@ -4,10 +4,10 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/lempiy/Kottans-Pizza-Api/notifications/handlers"
-	"github.com/lempiy/Kottans-Pizza-Api/notifications/utils"
 	"github.com/lempiy/Kottans-Pizza-Api/notifications/room"
-	"os"
+	"github.com/lempiy/Kottans-Pizza-Api/notifications/utils"
 	"log"
+	"os"
 )
 
 func main() {
@@ -21,6 +21,9 @@ func main() {
 	keyStorage := utils.NewKeyStorage(redisConn)
 	cluster := room.NewCluster()
 	PORT := os.Getenv("PORT")
+	if PORT == "" {
+		PORT = "4000"
+	}
 	r := e.Router()
 	handlers.Run(r, cluster, keyStorage)
 	e.Logger.Fatal(e.Start(":" + PORT))
