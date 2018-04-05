@@ -13,6 +13,7 @@ pub struct Claims {
     exp: i64,
     pub username: String,
     pub uuid: Uuid,
+    pub device_uuid: Uuid,
     pub store_id: i32,
 }
 
@@ -20,6 +21,7 @@ pub fn generate(
     username: &str,
     uuid: Uuid,
     secret: String,
+    device_uuid: Uuid,
     exp: i64,
     store_id: i32,
 ) -> Result<String> {
@@ -28,6 +30,7 @@ pub fn generate(
         exp,
         username: username.to_string(),
         uuid,
+        device_uuid,
         store_id,
     };
 
@@ -49,7 +52,7 @@ pub fn check(rds: &MutexGuard<Connection>, token: String) -> Result<TokenData<Cl
         return Err(ErrorKind::ExpiredSignature.into());
     };
 
-    let secret = match get_session(rds, claims.uuid) {
+    let secret = match get_session(rds, claims.uuid, claims.device_uuid) {
         Ok(secret) => secret,
         Err(_) => return Err(ErrorKind::InvalidSignature.into()),
     };

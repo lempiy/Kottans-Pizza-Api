@@ -14,19 +14,23 @@ pub fn create_redis_connection() -> (Connection, PubSub) {
 pub fn set_session(
     rds: &MutexGuard<Connection>,
     uuid: Uuid,
+    device_uuid: Uuid,
     secret: Uuid,
     exp: i64,
-) -> RedisResult<String> {
-    match rds.set::<String, String, String>(uuid.to_string(), secret.to_string()) {
-        Ok(_) => if let Err(e) = rds.expire_at::<String, usize>(uuid.to_string(), exp as usize) {
+) -> RedisResult<(String,Uuid)> {
+    match rds.set::<String, String, String>(uuid.to_string()
+                                                + &device_uuid.to_string(), secret.to_string()) {
+        Ok(_) => if let Err(e) = rds.expire_at::<String, usize>(
+            uuid.to_string() + &device_uuid.to_string(), exp as usize) {
             Err(e)
         } else {
-            Ok(secret.to_string())
+            Ok((secret.to_string(), device_uuid))
         },
         Err(e) => Err(e),
     }
 }
 
-pub fn get_session(rds: &MutexGuard<Connection>, uuid: Uuid) -> RedisResult<String> {
-    rds.get(uuid.to_string())
+pub fn get_session(rds: &MutexGuard<Connection>, uuid: Uuid, device_uuid: Uuid,)
+    -> RedisResult<String> {
+    rds.get(uuid.to_string() + &device_uuid.to_string())
 }

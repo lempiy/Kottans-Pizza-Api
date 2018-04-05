@@ -134,11 +134,12 @@ impl Handler for UserLoginHandler {
         if let Some(user) = result {
             try_handler!(User::update_login(&mg, user.uuid));
             let exp = (Utc::now() + Duration::hours(5)).naive_utc().timestamp();
-            let secret = try_handler!(set_session(&rds, user.uuid, Uuid::new_v4(), exp));
+            let (secret, device_uuid) = try_handler!(set_session(&rds, user.uuid, Uuid::new_v4(), Uuid::new_v4(), exp));
             let token = try_handler!(jwt::generate(
                 user.username.as_ref(),
                 user.uuid,
                 secret,
+                device_uuid,
                 exp,
                 user.store_id
             ));
