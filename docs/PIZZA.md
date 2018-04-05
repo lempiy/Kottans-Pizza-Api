@@ -102,7 +102,7 @@ Pizza Component responsible for CRUD operations over pizza.
 | `name` | *field* | Min length 3, max - 24 |
 | `description` | *field* | _Optional_ |
 | `size` | *field* | Should be either 30, 45 or 60 |
-| `ingredients` | *field* | JSON serialized array of integers - ingredient IDs. Non-empty. |
+| `ingredients` | *field* | JSON serialized array of integers - ingredient IDs. Non-empty. Max length - 6 |
 | `tags` | *field* | JSON serialized array of integers - tag IDs. Can be empty array. |
 | `image` | *file* | Up to 3MB `image/png` file |
 
