@@ -47,7 +47,10 @@ func (cluster *Cluster) run() {
 			delete(cluster.pool, command.id)
 		case emit:
 			for _, hub := range cluster.pool {
-				hub.Emit(command.data)
+				if hub.ID == command.id {
+					hub.Emit(command.data)
+					break
+				}
 			}
 		case die:
 			return
@@ -79,9 +82,10 @@ func (cluster *Cluster) Remove(id int) {
 	}
 }
 
-func (cluster *Cluster) Emit(msg []byte) {
+func (cluster *Cluster) Emit(msg []byte, hubID int) {
 	cluster.listener <- commandPayload{
 		action: emit,
+		id:     hubID,
 		data:   msg,
 	}
 }

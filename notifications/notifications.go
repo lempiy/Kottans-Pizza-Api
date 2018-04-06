@@ -18,13 +18,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	keyStorage := utils.NewKeyStorage(redisConn)
+	pubSubConn, err := utils.NewRedisConnection()
+	if err != nil {
+		log.Fatal(err)
+	}
+	storage := utils.NewStorage(redisConn, pubSubConn)
 	cluster := room.NewCluster()
 	PORT := os.Getenv("PORT")
 	if PORT == "" {
 		PORT = "4000"
 	}
 	r := e.Router()
-	handlers.Run(r, cluster, keyStorage)
+	handlers.Run(r, cluster, storage)
 	e.Logger.Fatal(e.Start(":" + PORT))
 }

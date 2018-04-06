@@ -8,6 +8,7 @@ import (
 )
 
 //Run - inits and fills app router with handlers.
-func Run(r *echo.Router, cluster *room.Cluster, keyHolder utils.KeyHolder) {
-	r.Add("GET", "/ws", ws.Handle(cluster, keyHolder))
+func Run(r *echo.Router, cluster *room.Cluster, storage *utils.Storage) {
+	go room.NewPublisher(cluster, storage).Watch()
+	r.Add("GET", "/ws", ws.Handle(cluster, storage))
 }

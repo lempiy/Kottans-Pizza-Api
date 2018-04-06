@@ -6,7 +6,7 @@ use iron::mime::TopLevel::Multipart;
 use iron::mime::SubLevel::FormData;
 use iron::{headers, status, Handler, IronResult, Plugin, Request, Response};
 use serde_json;
-use models::pizza::{CreatePizzaInput, Pizza};
+use models::pizza::{CreatePizzaInput, Pizza, PizzaListOutput};
 use std::error::Error;
 use utils::s3_uploader::put_object_with_filename;
 use utils::validator::{validate_image, validate_pizza_size, ValidationFile};
@@ -25,7 +25,7 @@ use multipart::server::Entries;
 use utils::types::StringError;
 use std::thread;
 use utils::pubsub::{Manager, PubSubEvent};
-use utils::constants::EVENT_NOTIFY_CREATE;
+use utils::constants::{NOTIFICATION_THREAD_NAME, CREATE_PIZZA_EVENT_NAME};
 
 #[derive(Validate)]
 struct CreatePizzaData {
@@ -45,6 +45,18 @@ struct CreatePizzaData {
 struct CreateResponse {
     success: bool,
     time_prepared: DateTime<Utc>,
+}
+
+#[derive(Serialize)]
+struct CreatePizzaNotification<'a> {
+    store_id: i32,
+    payload: CreatePizzaNotificationPayload<'a>,
+}
+
+#[derive(Serialize)]
+struct CreatePizzaNotificationPayload<'a> {
+    event_name: &'a str,
+    data: PizzaListOutput,
 }
 
 // Create new pizza
@@ -144,9 +156,16 @@ impl Handler for CreatePizzaHandler {
             let db = mx.lock().unwrap();
             let ps_manager = ps.lock().unwrap();
             if let Some(p) = Pizza::get_pizza_by_uuid(&db, uid_to_find, store_id) {
-                let message = serde_json::to_string(&p).unwrap();
+                let event = CreatePizzaNotification{
+                    store_id,
+                    payload: CreatePizzaNotificationPayload{
+                        event_name: CREATE_PIZZA_EVENT_NAME,
+                        data: p,
+                    }
+                };
+                let message = serde_json::to_string(&event).unwrap();
                 ps_manager.send(PubSubEvent {
-                    channel: EVENT_NOTIFY_CREATE.to_string(),
+                    channel: NOTIFICATION_THREAD_NAME.to_string(),
                     message,
                 });
             }
