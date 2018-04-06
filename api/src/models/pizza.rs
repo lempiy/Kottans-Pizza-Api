@@ -1,12 +1,14 @@
 use uuid::Uuid;
 use chrono::DateTime;
 use chrono::offset::Utc;
-use std::sync::MutexGuard;
+use std::sync::{MutexGuard,Mutex,Arc};
 use postgres::Connection;
 use postgres::transaction::Transaction;
 use postgres::Error;
 use std::result;
 use utils::itob;
+use std::{thread, time};
+use rand::{Rng, thread_rng};
 
 use super::tag::Tag;
 use super::ingredient::Ingredient;
@@ -215,6 +217,36 @@ impl Pizza {
             }
             Err(err) => Err(Error::from(err)),
         }
+    }
+
+    pub fn emulate_accept(db: Arc<Mutex<Connection>>) {
+        thread::spawn(move||{
+            let mut rng = thread_rng();
+            loop {
+                let db = db.lock().unwrap();
+                let sleep_time_sec:u64 = rng.gen_range(30, 60);
+                let ten_millis = time::Duration::from_millis(sleep_time_sec*1000);
+                let mut pizzas = Vec::new();
+                match db.query(
+                    "UPDATE pizza \
+                         SET accepted=1 \
+                         WHERE time_prepared < CURRENT_TIMESTAMP \
+                         RETURNING uuid, store_id;",
+                    &[],
+                ) {
+                    Ok(q) => {
+                        for row in q.iter() {
+                            let value:(String, i32) = (row.get("uuid"), row.get("store_id"));
+                            pizzas.push(value);
+                        }
+
+                        println!("emulate_accept successful {}", sleep_time_sec);
+                    },
+                    Err(e) => println!("emulate_accept error {:?}", e)
+                }
+                thread::sleep(ten_millis);
+            }
+        });
     }
 
     pub fn get_pizza_by_uuid(

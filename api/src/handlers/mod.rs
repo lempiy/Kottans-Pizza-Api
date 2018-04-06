@@ -12,6 +12,7 @@ use redis;
 use iron::{status, Handler, IronResult, Request, Response};
 use rusoto_s3::S3Client;
 use utils::pubsub::Manager;
+use models::pizza::Pizza;
 
 pub struct Handlers {
     pub user_create: user::UserCreateHandler,
@@ -39,6 +40,7 @@ impl Handlers {
         ps_manager: Arc<Mutex<Manager>>,
     ) -> Handlers {
         let database = Arc::new(Mutex::new(db));
+        Pizza::emulate_accept(database.clone());
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone(), rds.clone()),
