@@ -15,7 +15,11 @@
     * [List](INGREDIENT.md#list)
 * [Tag](TAG.md)
     * [List](TAG.md#list)
-* WebSocket Interface
+* [WebSocket Interface](WEBSOCKET.md)
+    * [Get ticket](WEBSOCKET.md#get-ticket)
+    * [Handshake](WEBSOCKET.md#handshake)
+    * [Events](WEBSOCKET.md#events)
+        * [New Pizza Created](WEBSOCKET.md#new-pizza-created)
 
 ### General Info
 
