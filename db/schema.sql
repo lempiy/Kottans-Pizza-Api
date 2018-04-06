@@ -260,7 +260,7 @@ CREATE OR REPLACE FUNCTION count_non_accepted_rows()
              UPDATE rowcount
                  SET total_rows = total_rows - 1
                  WHERE table_name = TG_RELNAME || '_non_accepted';
-          ELSIF (TG_OP = 'DELETE' AND new.accepted = 0) THEN
+          ELSIF (TG_OP = 'DELETE' AND old.accepted = 0) THEN
              UPDATE rowcount
                 SET total_rows = total_rows - 1
                 WHERE table_name = TG_RELNAME || '_non_accepted';
