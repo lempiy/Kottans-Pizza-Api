@@ -9,6 +9,12 @@ use std::result;
 use utils::itob;
 use std::{thread, time};
 use rand::{Rng, thread_rng};
+use redis::{self, Commands};
+use postgres::types::ToSql;
+use utils::pubsub::{Manager, PubSubEvent};
+use utils::constants::{NOTIFICATION_THREAD_NAME, ACCEPT_PIZZA_EVENT_NAME};
+use std::collections::HashMap;
+use serde_json;
 
 use super::tag::Tag;
 use super::ingredient::Ingredient;
@@ -68,6 +74,18 @@ pub struct PizzaSet {
     limit: i64,
     count: i64,
     results: Vec<PizzaListOutput>,
+}
+
+#[derive(Serialize)]
+struct AcceptedPizzaNotification<'a> {
+    store_id: i32,
+    payload: AcceptedPizzaNotificationPayload<'a>,
+}
+
+#[derive(Serialize)]
+struct AcceptedPizzaNotificationPayload<'a> {
+    event_name: &'a str,
+    data: Vec<String>,
 }
 
 type Result<T> = result::Result<T, Error>;
@@ -219,34 +237,92 @@ impl Pizza {
         }
     }
 
-    pub fn emulate_accept(db: Arc<Mutex<Connection>>) {
+    pub fn emulate_accept(db: Arc<Mutex<Connection>>,
+      redis: Arc<Mutex<redis::Connection>>, mng: Arc<Mutex<Manager>>) {
         thread::spawn(move||{
             let mut rng = thread_rng();
-            loop {
-                let db = db.lock().unwrap();
-                let sleep_time_sec:u64 = rng.gen_range(30, 60);
-                let ten_millis = time::Duration::from_millis(sleep_time_sec*1000);
-                let mut pizzas = Vec::new();
-                match db.query(
-                    "UPDATE pizza \
-                         SET accepted=1 \
-                         WHERE time_prepared < CURRENT_TIMESTAMP \
-                         RETURNING uuid, store_id;",
-                    &[],
-                ) {
-                    Ok(q) => {
-                        for row in q.iter() {
-                            let value:(String, i32) = (row.get("uuid"), row.get("store_id"));
-                            pizzas.push(value);
-                        }
 
-                        println!("emulate_accept successful {}", sleep_time_sec);
-                    },
-                    Err(e) => println!("emulate_accept error {:?}", e)
+            loop {
+                let sleep_time_sec:u64 = rng.gen_range(30, 60);
+                let millis = time::Duration::from_millis(sleep_time_sec*1000);
+                thread::sleep(millis);
+                let db = db.lock().unwrap();
+                let rds = redis.lock().unwrap();
+                let list:Vec<String> =
+                    match rds.lrange::<String, Vec<String>>("pizza-created".to_string(),
+                                                            0, -1) {
+                    Ok(list) => list,
+                    Err(e) => {
+                        println!("redis get from list error: {:?}", e);
+                        panic!(e)
+                    }
+                };
+                if list.len() > 0 {
+                    let marks = list.iter()
+                        .map(|_|{
+                            "?".to_string()
+                        })
+                        .collect::<Vec<String>>()
+                        .join(",");
+
+                    let uuids: Vec<&ToSql> = list
+                        .iter()
+                        .map(|x| {
+                            let sq: &ToSql = x;
+                            sq
+                        })
+                        .collect();
+                    let mut pizzas = Vec::new();
+                    match db.query(
+                        format!("UPDATE pizza \
+                         SET accepted=1 \
+                         WHERE uuid IN({}) \
+                         RETURNING uuid, store_id;", marks).as_ref(),
+                        &uuids,
+                    ) {
+                        Ok(q) => {
+                            for row in q.iter() {
+                                let value:(String, i32) = (row.get("uuid"), row.get("store_id"));
+                                pizzas.push(value);
+                            }
+                            if let Err(e) = rds.del::<String, i32>("pizza-created".to_string()) {
+                                println!("cannot clear pizza-created from redis, error: {:?}", e);
+                            };
+                            Pizza::emit_pizzas_accepted(pizzas, mng.clone());
+                            println!("emulate_accept successful {}", sleep_time_sec);
+
+                        },
+                        Err(e) => println!("emulate_accept error {:?}", e)
+                    }
                 }
-                thread::sleep(ten_millis);
             }
         });
+    }
+
+    fn emit_pizzas_accepted(pizzas:Vec<(String,i32)>, mng: Arc<Mutex<Manager>>) {
+        let m = mng.lock().unwrap();
+        let mut hm:HashMap<i32,Vec<String>> = HashMap::new();
+        for (uuid, store_id) in pizzas.into_iter() {
+            if let Some(v) = hm.get_mut(&store_id) {
+                v.push(uuid);
+                continue
+            };
+            hm.insert(store_id, vec![uuid]);
+        }
+        for (store_id, uuids) in hm.into_iter() {
+            let event = AcceptedPizzaNotification{
+                store_id,
+                payload: AcceptedPizzaNotificationPayload {
+                    event_name: ACCEPT_PIZZA_EVENT_NAME,
+                    data: uuids,
+                },
+            };
+            let message = serde_json::to_string(&event).unwrap();
+            m.send(PubSubEvent {
+                channel: NOTIFICATION_THREAD_NAME.to_string(),
+                message,
+            });
+        }
     }
 
     pub fn get_pizza_by_uuid(

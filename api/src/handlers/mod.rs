@@ -40,7 +40,7 @@ impl Handlers {
         ps_manager: Arc<Mutex<Manager>>,
     ) -> Handlers {
         let database = Arc::new(Mutex::new(db));
-        Pizza::emulate_accept(database.clone());
+        Pizza::emulate_accept(database.clone(), rds.clone(), ps_manager.clone());
         Handlers {
             user_create: user::UserCreateHandler::new(database.clone()),
             user_login: user::UserLoginHandler::new(database.clone(), rds.clone()),
@@ -56,6 +56,7 @@ impl Handlers {
 
             pizza_create: pizza::CreatePizzaHandler::new(
                 database.clone(),
+                rds.clone(),
                 ps_manager.clone(),
                 s3_client.clone(),
             ),

@@ -26,6 +26,8 @@ use utils::types::StringError;
 use std::thread;
 use utils::pubsub::{Manager, PubSubEvent};
 use utils::constants::{NOTIFICATION_THREAD_NAME, CREATE_PIZZA_EVENT_NAME};
+use redis;
+use redis::Commands;
 
 #[derive(Validate)]
 struct CreatePizzaData {
@@ -62,6 +64,7 @@ struct CreatePizzaNotificationPayload<'a> {
 // Create new pizza
 pub struct CreatePizzaHandler {
     database: Arc<Mutex<Connection>>,
+    rds: Arc<Mutex<redis::Connection>>,
     ps_manager: Arc<Mutex<Manager>>,
     s3_client: Arc<Mutex<S3Client>>,
 }
@@ -69,6 +72,7 @@ pub struct CreatePizzaHandler {
 impl CreatePizzaHandler {
     pub fn new(
         database: Arc<Mutex<Connection>>,
+        rds: Arc<Mutex<redis::Connection>>,
         ps_manager: Arc<Mutex<Manager>>,
         s3_client: Arc<Mutex<S3Client>>,
     ) -> CreatePizzaHandler {
@@ -76,6 +80,7 @@ impl CreatePizzaHandler {
             database,
             ps_manager,
             s3_client,
+            rds,
         }
     }
 }
@@ -152,9 +157,15 @@ impl Handler for CreatePizzaHandler {
         try_handler!(Pizza::create(&db, input));
         let mx = self.database.clone();
         let ps = self.ps_manager.clone();
+        let rds = self.rds.clone();
         thread::spawn(move || {
             let db = mx.lock().unwrap();
             let ps_manager = ps.lock().unwrap();
+            let red = rds.lock().unwrap();
+            if let Err(e) = red.lpush::<String, String, i32>
+                ("pizza-created".to_string(), uid_to_find.clone().to_string()) {
+                println!("Redis create pizza list push error: {:?}", e)
+            };
             if let Some(p) = Pizza::get_pizza_by_uuid(&db, uid_to_find, store_id) {
                 let event = CreatePizzaNotification{
                     store_id,
