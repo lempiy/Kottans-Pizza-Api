@@ -37,6 +37,7 @@ func (p *Publisher) Watch() {
 				if err := jsoniter.Unmarshal(msg, &message); err != nil {
 					log.Println("Publisher.Watch err: ", err)
 				}
+				log.Println(message.StoreID, string(message.Payload))
 				p.Emit(message.Payload, message.StoreID)
 			case <-p.die:
 				return

@@ -1,18 +1,18 @@
 use uuid::Uuid;
 use chrono::DateTime;
 use chrono::offset::Utc;
-use std::sync::{MutexGuard,Mutex,Arc};
+use std::sync::{Arc, Mutex, MutexGuard};
 use postgres::Connection;
 use postgres::transaction::Transaction;
 use postgres::Error;
 use std::result;
 use utils::itob;
 use std::{thread, time};
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use redis::{self, Commands};
 use postgres::types::ToSql;
 use utils::pubsub::{Manager, PubSubEvent};
-use utils::constants::{NOTIFICATION_THREAD_NAME, ACCEPT_PIZZA_EVENT_NAME};
+use utils::constants::{ACCEPT_PIZZA_EVENT_NAME, NOTIFICATION_THREAD_NAME};
 use std::collections::HashMap;
 use serde_json;
 
@@ -237,80 +237,122 @@ impl Pizza {
         }
     }
 
-    pub fn emulate_accept(db: Arc<Mutex<Connection>>,
-      redis: Arc<Mutex<redis::Connection>>, mng: Arc<Mutex<Manager>>) {
-        thread::spawn(move||{
+    pub fn emulate_accept(
+        db: Arc<Mutex<Connection>>,
+        redis: Arc<Mutex<redis::Connection>>,
+        mng: Arc<Mutex<Manager>>,
+    ) {
+        thread::spawn(move || {
             let mut rng = thread_rng();
 
             loop {
-                let sleep_time_sec:u64 = rng.gen_range(30, 60);
-                let millis = time::Duration::from_millis(sleep_time_sec*1000);
+                let sleep_time_sec: u64 = rng.gen_range(30, 60);
+                let millis = time::Duration::from_millis(sleep_time_sec * 1000);
                 thread::sleep(millis);
                 let db = db.lock().unwrap();
                 let rds = redis.lock().unwrap();
-                let list:Vec<String> =
-                    match rds.lrange::<String, Vec<String>>("pizza-created".to_string(),
-                                                            0, -1) {
-                    Ok(list) => list,
-                    Err(e) => {
-                        println!("redis get from list error: {:?}", e);
-                        panic!(e)
-                    }
-                };
+                let list: Vec<String> =
+                    match rds.lrange::<String, Vec<String>>("pizza-created".to_string(), 0, -1) {
+                        Ok(list) => list,
+                        Err(e) => {
+                            println!("redis get from list error: {:?}", e);
+                            panic!(e)
+                        }
+                    };
                 if list.len() > 0 {
-                    let marks = list.iter()
-                        .map(|_|{
-                            "?".to_string()
-                        })
-                        .collect::<Vec<String>>()
-                        .join(",");
-
-                    let uuids: Vec<&ToSql> = list
-                        .iter()
+                    let mut hm: HashMap<String, DateTime<Utc>> = HashMap::new();
+                    let uuids: Vec<Uuid> = list.iter()
                         .map(|x| {
-                            let sq: &ToSql = x;
-                            sq
+                            let v: Vec<&str> = x.split("@").collect();
+                            let time = v[1].parse::<DateTime<Utc>>().unwrap();
+                            hm.insert(v[0].to_string(), time);
+                            Uuid::parse_str(v[0]).unwrap()
                         })
                         .collect();
-                    let mut pizzas = Vec::new();
-                    match db.query(
-                        format!("UPDATE pizza \
-                         SET accepted=1 \
-                         WHERE uuid IN({}) \
-                         RETURNING uuid, store_id;", marks).as_ref(),
-                        &uuids,
-                    ) {
-                        Ok(q) => {
-                            for row in q.iter() {
-                                let value:(String, i32) = (row.get("uuid"), row.get("store_id"));
-                                pizzas.push(value);
+                    let mut uuids_to_keep: Vec<String> = Vec::new();
+                    let mut uuids_to_accept: Vec<Uuid> = Vec::new();
+                    let now = Utc::now();
+                    for uid in uuids.into_iter() {
+                        let v: &DateTime<Utc> = hm.get(&uid.to_string()).unwrap();
+                        if *v > now {
+                            uuids_to_keep.push(uid.to_string() + "@" + &format!("{:?}", v))
+                        } else {
+                            uuids_to_accept.push(uid)
+                        }
+                    }
+                    if uuids_to_accept.len() > 0 {
+                        let marks = uuids_to_accept
+                            .iter()
+                            .enumerate()
+                            .map(|x| {
+                                let (i, _) = x;
+                                format!("${}", i + 1)
+                            })
+                            .collect::<Vec<String>>()
+                            .join(",");
+                        let sqls: Vec<&ToSql> = uuids_to_accept
+                            .iter()
+                            .map(|x| {
+                                let sq: &ToSql = x;
+                                sq
+                            })
+                            .collect();
+                        let mut pizzas = Vec::new();
+                        println!("uuids_to_accept {:?}", uuids_to_accept);
+                        match db.query(
+                            format!(
+                                "UPDATE pizza \
+                                 SET accepted=1 \
+                                 WHERE uuid IN({}) \
+                                 RETURNING uuid, store_id;",
+                                marks
+                            ).as_ref(),
+                            &sqls,
+                        ) {
+                            Ok(q) => {
+                                for row in q.iter() {
+                                    let uid: Uuid = row.get("uuid");
+                                    let value: (String, i32) =
+                                        (uid.to_string(), row.get("store_id"));
+                                    pizzas.push(value);
+                                }
+                                Pizza::update_pizzas_cache(&rds, uuids_to_keep);
+                                Pizza::emit_pizzas_accepted(pizzas, mng.clone());
+                                println!("emulate_accept successful {}", sleep_time_sec);
                             }
-                            if let Err(e) = rds.del::<String, i32>("pizza-created".to_string()) {
-                                println!("cannot clear pizza-created from redis, error: {:?}", e);
-                            };
-                            Pizza::emit_pizzas_accepted(pizzas, mng.clone());
-                            println!("emulate_accept successful {}", sleep_time_sec);
-
-                        },
-                        Err(e) => println!("emulate_accept error {:?}", e)
+                            Err(e) => println!("emulate_accept error {:?}", e),
+                        }
                     }
                 }
             }
         });
     }
 
-    fn emit_pizzas_accepted(pizzas:Vec<(String,i32)>, mng: Arc<Mutex<Manager>>) {
+    fn update_pizzas_cache(rds: &MutexGuard<redis::Connection>, keep: Vec<String>) {
+        println!("keep {:?}", keep);
+        if let Err(e) = rds.del::<String, i32>("pizza-created".to_string()) {
+            println!("cannot clear pizza-created from redis, error: {:?}", e);
+        };
+        for red_value in keep.into_iter() {
+            if let Err(e) = rds.lpush::<String, String, i32>("pizza-created".to_string(), red_value)
+            {
+                println!("Redis recreate pizza list push error: {:?}", e)
+            };
+        }
+    }
+
+    fn emit_pizzas_accepted(pizzas: Vec<(String, i32)>, mng: Arc<Mutex<Manager>>) {
         let m = mng.lock().unwrap();
-        let mut hm:HashMap<i32,Vec<String>> = HashMap::new();
+        let mut hm: HashMap<i32, Vec<String>> = HashMap::new();
         for (uuid, store_id) in pizzas.into_iter() {
             if let Some(v) = hm.get_mut(&store_id) {
                 v.push(uuid);
-                continue
+                continue;
             };
             hm.insert(store_id, vec![uuid]);
         }
         for (store_id, uuids) in hm.into_iter() {
-            let event = AcceptedPizzaNotification{
+            let event = AcceptedPizzaNotification {
                 store_id,
                 payload: AcceptedPizzaNotificationPayload {
                     event_name: ACCEPT_PIZZA_EVENT_NAME,
@@ -318,6 +360,7 @@ impl Pizza {
                 },
             };
             let message = serde_json::to_string(&event).unwrap();
+            println!("send notification {}", message);
             m.send(PubSubEvent {
                 channel: NOTIFICATION_THREAD_NAME.to_string(),
                 message,

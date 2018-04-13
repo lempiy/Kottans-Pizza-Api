@@ -25,7 +25,7 @@ use multipart::server::Entries;
 use utils::types::StringError;
 use std::thread;
 use utils::pubsub::{Manager, PubSubEvent};
-use utils::constants::{NOTIFICATION_THREAD_NAME, CREATE_PIZZA_EVENT_NAME};
+use utils::constants::{CREATE_PIZZA_EVENT_NAME, NOTIFICATION_THREAD_NAME};
 use redis;
 use redis::Commands;
 
@@ -162,17 +162,18 @@ impl Handler for CreatePizzaHandler {
             let db = mx.lock().unwrap();
             let ps_manager = ps.lock().unwrap();
             let red = rds.lock().unwrap();
-            if let Err(e) = red.lpush::<String, String, i32>
-                ("pizza-created".to_string(), uid_to_find.clone().to_string()) {
+            let red_value = uid_to_find.to_string() + "@" + &format!("{:?}", time_prepared);
+            if let Err(e) = red.lpush::<String, String, i32>("pizza-created".to_string(), red_value)
+            {
                 println!("Redis create pizza list push error: {:?}", e)
             };
             if let Some(p) = Pizza::get_pizza_by_uuid(&db, uid_to_find, store_id) {
-                let event = CreatePizzaNotification{
+                let event = CreatePizzaNotification {
                     store_id,
-                    payload: CreatePizzaNotificationPayload{
+                    payload: CreatePizzaNotificationPayload {
                         event_name: CREATE_PIZZA_EVENT_NAME,
                         data: p,
-                    }
+                    },
                 };
                 let message = serde_json::to_string(&event).unwrap();
                 ps_manager.send(PubSubEvent {
