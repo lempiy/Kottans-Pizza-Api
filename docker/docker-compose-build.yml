@@ -1,7 +1,7 @@
 version: '3'
 services:
   kottans_pizza:
-    image: lempiy/kottans_pizza_api:v.0.2.0
+    image: lempiy/kottans_pizza_api:v.0.2.2
     environment:
       - PORT=8080
     network_mode: "host"
@@ -9,8 +9,17 @@ services:
       - "8080:8080"
     container_name: kottans_pizza_service
 
+  kottans_notifications:
+    image: lempiy/kottans_notifications:v.0.0.1
+    environment:
+      - PORT=4000
+    network_mode: "host"
+    ports:
+      - "4000:4000"
+    container_name: kottans_notifications_service
+
   nginx:
-    image: lempiy/nginx-certbox:v1.1
+    image: lempiy/nginx-certbox:v1.3
     network_mode: "host"
     environment:
       - DOMAIN=pizza-tele.ga
