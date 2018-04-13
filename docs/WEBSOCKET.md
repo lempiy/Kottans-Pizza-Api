@@ -104,3 +104,14 @@ Upgraded WS connection and immediate Close Event with `4001` status code.
 | `img_url` | *string* | URL with pizza picture  |
 | `created_date` | *string* | Datetime UTC when pizza was created |
 | `time_prepared` | *string* | Datetime UTC when pizza will be prepared |
+
+### Pizza Accepted
+
+*Event identifier*: `ACCEPT_PIZZA`
+
+*Returned values:*
+
+| Field | Type | Requirement |
+| --- | --- | --- |
+| `event_name` | *string* | Constant event identifier  |
+| `data` | *[]string* | Array of accepted pizza uuids |

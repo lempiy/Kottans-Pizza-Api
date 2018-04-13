@@ -20,6 +20,7 @@
     * [Handshake](WEBSOCKET.md#handshake)
     * [Events](WEBSOCKET.md#events)
         * [New Pizza Created](WEBSOCKET.md#new-pizza-created)
+        * [Pizza Accepted](WEBSOCKET.md#pizza-accepted)
 
 ### General Info
 
