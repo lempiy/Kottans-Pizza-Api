@@ -141,7 +141,7 @@ CREATE OR REPLACE FUNCTION init_new_store()
                 INSERT INTO rowcount (table_name, total_rows)
                     VALUES  (%8$L,  0);
                 CREATE TRIGGER countrows_accepted
-                  AFTER INSERT OR DELETE on %1$I
+                  AFTER INSERT OR DELETE OR UPDATE on %1$I
                   FOR EACH ROW EXECUTE PROCEDURE count_non_accepted_rows();
                 $$,
                  part_name,
