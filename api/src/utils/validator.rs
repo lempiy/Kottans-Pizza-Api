@@ -45,8 +45,12 @@ pub fn validate_image(f: &ValidationFile) -> Result<(), ValidationError> {
 
 pub fn validate_pizza_size(size: i64) -> Result<(), ValidationError> {
     match size {
-        30i64 | 45i64 | 64i64 => Ok(()),
-        _ => Err(ValidationError::new(("wrong_size"))),
+        30i64 | 45i64 | 60i64 => Ok(()),
+        _ => Err(ValidationError {
+            code: Cow::from("wrong_size"),
+            message: Some(Cow::from("Wrong pizza size - only 30, 45 or 60 allowed")),
+            params: HashMap::new(),
+        }),
     }
 }
 

@@ -203,7 +203,7 @@ impl Handler for UserGetWsTokenHandler {
             token,
         };
         let res: String = try_handler!(serde_json::to_string(&response));
-        Ok(Response::with((status::BadRequest, res)))
+        Ok(Response::with((status::Ok, res)))
     }
 }
 
