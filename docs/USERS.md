@@ -59,7 +59,7 @@ and CRUD operations over pizza management users.
         "Passwords do not match",
         "Email is not valid",
         "Password is not valid. Min length is 8",
-        "User with such username already exist",
+        "User with such username already exists",
         "Wrong store credentials",
         "Store password is not valid. Min length is 8"
     ]
