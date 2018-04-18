@@ -93,7 +93,7 @@ Pizza Component responsible for CRUD operations over pizza.
 | *POST* | `/api/v1/pizza/create` | Create new pizza |  :heavy_check_mark: |
 
 
-**Content-Type: multipart/formdata**
+**Content-Type: multipart/form-data**
 
 **Request body - Validation:**
 
